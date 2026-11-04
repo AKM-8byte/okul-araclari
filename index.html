@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Okul Araçları</title>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/common.js"></script>
+<style>
+  .hero{
+    position:relative;overflow:hidden;border-radius:28px;padding:34px 30px;color:#fff;background:var(--grad);
+    box-shadow:0 6px 0 #c2410c, var(--shadow);margin-bottom:24px;
+  }
+  .hero h1{font-size:clamp(26px,4vw,38px);margin:4px 0 6px;font-weight:900}
+  .hero p{margin:0;font-size:16px;font-weight:600;opacity:.95;max-width:560px}
+  .hero .greet{font-weight:900;font-size:14px;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+  .hero .deco{position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:92px;opacity:.9;filter:drop-shadow(0 6px 0 rgba(0,0,0,.12))}
+  .hero .bubble{position:absolute;border-radius:50%;background:rgba(255,255,255,.14)}
+
+  .controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+  .search{position:relative;flex:1;min-width:220px}
+  .search .input{padding-left:38px;height:44px;border-radius:14px;font-size:15px;background:var(--surface)}
+  .search span{position:absolute;left:13px;top:50%;transform:translateY(-50%)}
+
+  .tools{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  .tool-card{
+    display:flex;flex-direction:column;gap:8px;text-decoration:none;color:var(--text);background:var(--surface);
+    border:1.5px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 5px 0 var(--pop);
+    transition:transform .15s,box-shadow .15s,border-color .15s;
+  }
+  a.tool-card:hover{transform:translateY(-3px);box-shadow:0 8px 0 var(--pop);border-color:var(--brand)}
+  a.tool-card:active{transform:translateY(1px);box-shadow:0 2px 0 var(--pop)}
+  .tool-ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:27px;background:var(--brand-soft)}
+  .tool-card h3{margin:4px 0 0;font-size:17px;font-weight:900}
+  .tool-card p{margin:0;color:var(--muted);font-size:14px;font-weight:600;flex:1}
+  .tool-card .roles{display:flex;gap:6px;flex-wrap:wrap}
+  .tool-card.soon{opacity:.6;box-shadow:none;border-style:dashed}
+  .tool-card .go{font-weight:900;color:var(--brand);font-size:14px}
+  .classes-cta{display:flex;align-items:center;gap:14px;text-decoration:none;color:var(--text);background:var(--surface);border:1.5px dashed var(--brand);border-radius:20px;padding:14px 18px;margin-bottom:18px}
+  .classes-cta:hover{background:var(--brand-soft)}
+  .classes-cta b{display:block;font-size:16px;font-weight:900}
+  .classes-cta small{color:var(--muted);font-weight:700}
+  .classes-cta .go{margin-left:auto;font-weight:900;color:var(--brand);white-space:nowrap}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-weight:700;grid-column:1/-1}
+  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:34px}
+  @media (max-width:640px){.hero{padding:26px 20px}.hero .deco{display:none}}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="hero">
+    <span class="bubble" style="width:180px;height:180px;right:-40px;top:-60px"></span>
+    <span class="bubble" style="width:90px;height:90px;right:160px;bottom:-40px"></span>
+    <div class="greet" id="greet">Merhaba!</div>
+    <h1>Bugün ne yapıyoruz?</h1>
+    <p>Müdürler, öğretmenler ve öğrenciler için işi kolaylaştıran araçlar. Hesap gerekmez, verileriniz yalnızca bu cihazda kalır.</p>
+    <div class="deco">🎒</div>
+  </section>
+
+  <div class="controls">
+    <label class="search"><span>🔎</span><input class="input" id="q" placeholder="Araç ara… (ör. not, sıra, afiş)" aria-label="Araç ara"></label>
+    <div class="seg" id="roles">
+      <button data-role="" class="on">Tümü</button>
+      <button data-role="ogrenci">🎓 Öğrenci</button>
+      <button data-role="ogretmen">🧑‍🏫 Öğretmen</button>
+      <button data-role="mudur">🏫 Müdür</button>
+    </div>
+  </div>
+
+  <a class="classes-cta" href="araclar/siniflar.html">
+    <span class="tool-ic">📚</span>
+    <span><b>Sınıflarım</b><small id="clsInfo">Öğrenci listelerini bir kez girin, tüm araçlar kullansın.</small></span>
+    <span class="go">Yönet →</span>
+  </a>
+
+  <div id="backupNote"></div>
+
+  <div class="tools" id="tools"></div>
+  <p class="foot">Okul Araçları · Veriler tarayıcınızda saklanır, hiçbir yere gönderilmez. · <a href="#" id="bkLink">💾 Yedekle / Geri yükle</a> · <a href="#" id="abLink">ℹ️ Hakkında</a><span id="instWrap" hidden> · <a href="#" id="instLink">📲 Uygulama olarak kur</a></span></p>
+</main>
+
+<script>
+OA.topbar({ home: 'index.html', about: true });
+
+const ROLE = { ogrenci: '🎓 Öğrenci', ogretmen: '🧑‍🏫 Öğretmen', mudur: '🏫 Müdür' };
+const TOOLS = [
+  { href: 'araclar/sira.html', ic: '🪑', title: 'Sınıf Oturma Düzeni', desc: 'Öğrencileri kurallarınıza göre sıralara otomatik yerleştirin; işaretleri tek tıkla gizleyin.', roles: ['ogretmen', 'mudur'] },
+  { href: 'araclar/not-hesapla.html', ic: '🧮', title: 'Not / Ortalama Hesaplayıcı', desc: 'Ders notu, dönem ortalaması, yıl sonu ve ağırlıklı ortalama. Kaç alman gerektiğini de söyler.', roles: ['ogrenci', 'ogretmen'] },
+  { href: 'araclar/not-cizelgesi.html', ic: '📊', title: 'Sınıf Not Çizelgesi', desc: 'Sınıf listesiyle notları girin; ortalamalar, istatistikler ve Excel çıktısı hazır.', roles: ['ogretmen'] },
+  { href: 'araclar/duyuru.html', ic: '📢', title: 'Duyuru Afişi', desc: 'Hazır şablonlarla dikkat çekici, yazdırılabilir duyuru afişleri hazırlayın.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/tutanak.html', ic: '📝', title: 'Toplantı Tutanağı', desc: 'Gündem, görüşmeler, kararlar ve imza tablosuyla resmî tutanak oluşturun.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/yillik-plan.html', ic: '🗂️', title: 'Yıllık Plan Oluşturucu', desc: 'Ünite ve kazanımları haftalara dağıtın; tatiller ve belirli günler otomatik, yazdırma ve Excel.', roles: ['ogretmen'] },
+  { href: 'araclar/belirli-gunler.html', ic: '📅', title: 'Belirli Gün ve Haftalar', desc: 'Yıl boyu kutlanacak günler, sorumlu öğretmen çizelgesi ve tek tıkla afiş.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/yoklama.html', ic: '📋', title: 'Yoklama Çizelgesi', desc: 'Tıklayarak yoklama alın; devamsızlıklar sayılır, sınıra yaklaşanlar uyarılır.', roles: ['ogretmen', 'mudur'] },
+  { href: 'araclar/sinav-plani.html', ic: '🏛️', title: 'Ortak Sınav Oturma Planı', desc: 'Sınıfları salonlara karıştırarak yerleştirin; kapı listesi ve imza çizelgesi hazır.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/secici.html', ic: '🎲', title: 'Rastgele Öğrenci Seçici', desc: 'Animasyonlu, adil öğrenci seçimi. Gelmeyenleri çıkarır, herkese sıra gelir.', roles: ['ogretmen'] },
+  { href: 'araclar/grup.html', ic: '👥', title: 'Grup Oluşturucu', desc: 'Sınıfı dengeli gruplara ayırın, ayrı oturması gerekenleri dağıtın, başkan seçin.', roles: ['ogretmen'] },
+  { href: 'araclar/zamanlayici.html', ic: '⏳', title: 'Sınıf Zamanlayıcı', desc: 'Tahtaya yansıtılabilir büyük geri sayım ve kronometre, sesli uyarı.', roles: ['ogretmen', 'ogrenci'] },
+  { href: 'araclar/ders-programi.html', ic: '🗓️', title: 'Ders Programı (Okul Geneli)', desc: 'Tüm sınıfların programını öğretmen çakışması olmadan otomatik dağıtın; sınıf, öğretmen ve çarşaf görünümü.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/sinav-puan.html', ic: '🎯', title: 'LGS / YKS Puan Hesaplayıcı', desc: 'Doğru-yanlıştan net ve tahmini LGS, TYT, AYT puanı.', roles: ['ogrenci', 'ogretmen'] },
+  { href: 'araclar/nobet.html', ic: '🛡️', title: 'Nöbet Çizelgesi', desc: 'Öğretmen nöbetlerini günlere ve yerlere adil dağıtın.', roles: ['mudur'] },
+  { href: 'araclar/resmi-yazi.html', ic: '✉️', title: 'Resmî Yazı ve Dilekçe', desc: 'İzin, veli mazeret, gezi izni, görevlendirme ve genel dilekçe şablonları.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/sertifika.html', ic: '🏅', title: 'Belge ve Sertifika', desc: 'Teşekkür, takdir, katılım belgeleri; tüm sınıfa toplu çıktı.', roles: ['mudur', 'ogretmen'] },
+  { href: 'araclar/katilim.html', ic: '✅', title: 'Etkinlik Katılım Listesi', desc: 'Gezi ve törenler için imzalı, veli izinli katılım listesi.', roles: ['mudur', 'ogretmen'] }
+];
+
+const hour = new Date().getHours();
+document.getElementById('greet').textContent =
+  hour < 6 ? 'İyi geceler 🌙' : hour < 12 ? 'Günaydın ☀️' : hour < 18 ? 'İyi günler 👋' : 'İyi akşamlar 🌆';
+
+let role = OA.store.get('oa.home.role', '');
+const norm = s => s.toLocaleLowerCase('tr');
+
+function render() {
+  const q = norm(document.getElementById('q').value.trim());
+  const list = TOOLS.filter(t => (!role || t.roles.includes(role)) && (!q || norm(t.title + ' ' + t.desc).includes(q)));
+  document.getElementById('tools').innerHTML = list.map(t => `
+    <${t.soon ? 'div' : `a href="${t.href}"`} class="tool-card${t.soon ? ' soon' : ''}">
+      <div class="row" style="justify-content:space-between">
+        <span class="tool-ic">${t.ic}</span>
+        ${t.soon ? '<span class="chip">Yakında</span>' : '<span class="go">Aç →</span>'}
+      </div>
+      <h3>${t.title}</h3>
+      <p>${t.desc}</p>
+      <div class="roles">${t.roles.map(r => `<span class="chip">${ROLE[r]}</span>`).join('')}</div>
+    </${t.soon ? 'div' : 'a'}>`).join('') || '<div class="empty">Aramanıza uyan araç bulunamadı 🙈</div>';
+  document.querySelectorAll('#roles button').forEach(b => b.classList.toggle('on', b.dataset.role === role));
+}
+
+const cl = OA.classes.list();
+if (cl.length) document.getElementById('clsInfo').textContent = `${cl.length} sınıf, ${cl.reduce((n, c) => n + c.students.length, 0)} öğrenci kayıtlı: ${cl.map(c => c.name).join(', ')}`;
+
+let instEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); instEvt = e; document.getElementById('instWrap').hidden = false; });
+window.addEventListener('appinstalled', () => { document.getElementById('instWrap').hidden = true; });
+document.getElementById('instLink').onclick = async e => { e.preventDefault(); if (!instEvt) return; instEvt.prompt(); await instEvt.userChoice; instEvt = null; document.getElementById('instWrap').hidden = true; };
+document.getElementById('bkLink').onclick = e => { e.preventDefault(); OA.backupDialog(); };
+document.getElementById('abLink').onclick = e => { e.preventDefault(); OA.aboutDialog(); };
+
+// Veri var ama 2 haftadır (ya da hiç) yedek alınmadıysa hatırlat
+const lastBk = OA.backup.last();
+if (OA.backup.hasData() && (!lastBk || Date.now() - new Date(lastBk) > 14 * 864e5)) {
+  document.getElementById('backupNote').innerHTML = `
+    <div class="hint" style="justify-content:space-between;flex-wrap:wrap">
+      <span>💾 ${lastBk ? 'Son yedeğinizin üzerinden 2 haftadan fazla geçti.' : 'Verileriniz yalnızca bu tarayıcıda duruyor; henüz yedek almadınız.'}</span>
+      <button class="btn sm primary" id="bkNow">Şimdi yedek al</button>
+    </div>`;
+  document.getElementById('bkNow').onclick = () => { OA.backup.download(); document.getElementById('backupNote').innerHTML = ''; };
+}
+
+document.getElementById('q').addEventListener('input', render);
+document.getElementById('roles').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  role = b.dataset.role; OA.store.set('oa.home.role', role); render();
+});
+render();
+</script>
+</body>
+</html>

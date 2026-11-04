@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grup Oluşturucu · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .layout{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+  .side{display:flex;flex-direction:column;gap:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;max-height:30vh;overflow:auto}
+  .schip{font:inherit;font-weight:800;font-size:12.5px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:999px;padding:3px 9px;cursor:pointer}
+  .schip.absent{opacity:.45;text-decoration:line-through}
+  .numrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .numrow .input{width:80px;text-align:center;font-size:18px;font-weight:900}
+  .pair{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line-2)}
+
+  .gtools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .gcard{border-radius:20px;background:var(--surface);border:1.5px solid var(--line);overflow:hidden;box-shadow:0 5px 0 var(--pop);display:flex;flex-direction:column}
+  .gcard.over{outline:3px dashed var(--gc);outline-offset:2px}
+  .ghead{background:var(--gc);color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px}
+  .ghead .ge{font-size:24px}
+  .ghead input{font:inherit;font-weight:900;font-size:16px;background:transparent;border:1.5px solid transparent;color:#fff;border-radius:8px;padding:2px 6px;width:100%}
+  .ghead input:focus{outline:none;border-color:rgba(255,255,255,.7)}
+  .ghead .cnt{background:rgba(255,255,255,.25);border-radius:999px;padding:2px 9px;font-weight:900;font-size:12.5px;white-space:nowrap}
+  .members{list-style:none;margin:0;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:60px;flex:1}
+  .mem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:12px;background:var(--surface-2);font-weight:800;font-size:13.5px;cursor:grab;border:1.5px solid transparent}
+  .mem:hover{border-color:var(--gc)}
+  .mem .av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:10.5px;background:hsl(var(--h) 65% 52%);flex:none}
+  .mem .star{margin-left:auto;cursor:pointer;opacity:.25;font-size:15px}
+  .mem.leader .star{opacity:1}
+  .mem.leader{background:color-mix(in srgb,var(--gc) 14%,var(--surface))}
+  .empty{text-align:center;color:var(--muted);font-weight:700;padding:50px 16px;border:2px dashed var(--line);border-radius:20px}
+  .empty .big{font-size:46px}
+  #groupsWrap:fullscreen{background:var(--bg);padding:30px;overflow:auto}
+  #groupsWrap:fullscreen .mem{font-size:17px}
+  .print-head{display:none}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  @media print{
+    .side,.gtools{display:none!important}
+    .layout{display:block}
+    .page{padding:0;max-width:none}
+    .print-head{display:block;text-align:center;margin:0 0 14px}
+    .groups{grid-template-columns:repeat(3,1fr);gap:10px}
+    .gcard{box-shadow:none;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .mem .star:not(.on){display:none}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="layout">
+    <aside class="side">
+      <div class="panel">
+        <h2><span><span class="h-ic">🏫</span> Sınıf</span></h2>
+        <select class="input" id="cls"></select>
+        <textarea class="input" id="manual" rows="5" placeholder="Her satıra bir isim" style="margin-top:8px;display:none"></textarea>
+        <p class="small" style="margin:10px 0 6px">Gelmeyen öğrencinin üstüne tıklayın, gruplara katılmaz.</p>
+        <div class="chips" id="chips"></div>
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">⚙️</span> Ayarlar</span></h2>
+        <div class="stack">
+          <div class="seg" id="modeSeg"><button data-mode="count">Grup sayısına göre</button><button data-mode="size">Grup başına kişi</button></div>
+          <div class="numrow"><input class="input" type="number" id="num" min="1" max="20"><span class="small" id="numHint"></span></div>
+          <div class="checks">
+            <label><input type="checkbox" id="fun"> 🦁 Eğlenceli grup adları</label>
+            <label><input type="checkbox" id="leader"> ⭐ Grup başkanı seç</label>
+            <label><input type="checkbox" id="splitTalk"> 🔹 Ayrı oturmalıları dağıt</label>
+          </div>
+          <p class="small" style="margin:0">🔹 işaretleri Sınıf Oturma Düzeni aracından alınır.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">↔️</span> Aynı grupta olmasın</span></h2>
+        <div class="row" style="flex-wrap:nowrap">
+          <select class="input" id="pa"></select><select class="input" id="pb"></select>
+          <button class="btn" id="btnPair">+</button>
+        </div>
+        <div id="pairs" style="margin-top:6px"></div>
+      </div>
+    </aside>
+
+    <main>
+      <div class="gtools">
+        <button class="btn primary" id="btnMake">🔀 Grupları Oluştur</button>
+        <span class="spacer"></span>
+        <button class="btn" id="btnCopy">📋 Metin olarak kopyala</button>
+        <button class="btn" id="btnFull">⛶ Tam ekran</button>
+        <button class="btn" id="btnPrint">🖨️ Yazdır</button>
+      </div>
+      <div id="groupsWrap">
+        <h2 class="print-head" id="printHead"></h2>
+        <div id="groups"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '👥', title: 'Grup Oluşturucu',
+  help: {
+    key: 'grup', emoji: '👥', title: 'Bu bir grup oluşturma aracıdır',
+    intro: 'Sınıfınızı birkaç saniyede dengeli gruplara ayırır. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🏫', title: 'Sınıfı seçin', text: 'Sınıflarım\'dan bir sınıf seçin ya da isimleri elle yazın. Gelmeyenlerin üstüne tıklayın.' },
+      { icon: '🔢', title: 'Grup sayısını belirleyin', text: 'Kaç grup olacağını ya da her grupta kaç kişi olacağını seçin.' },
+      { icon: '⚙️', title: 'Kuralları ekleyin', text: 'Ayrı oturması gereken (🔹) öğrencileri farklı gruplara dağıtın, aynı grupta olmaması gereken ikilileri ekleyin, başkan seçtirin.' },
+      { icon: '🔀', title: '"Grupları Oluştur"a basın', text: 'Beğenmezseniz tekrar basın. Öğrencileri sürükleyerek gruplar arasında taşıyabilir, ⭐ ile başkanı değiştirebilirsiniz.' },
+      { icon: '🖨️', title: 'Paylaşın', text: 'Tam ekranla tahtaya yansıtın, yazdırın ya da metin olarak kopyalayıp mesajla gönderin.' }
+    ]
+  }
+});
+
+const KEY = 'oa.grup';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const COLORS = ['#f97316', '#3b82f6', '#10b981', '#a855f7', '#ef4444', '#0ea5e9', '#eab308', '#ec4899', '#14b8a6', '#6366f1', '#84cc16', '#f43f5e'];
+const FUN = [['🦁', 'Aslanlar'], ['🦅', 'Kartallar'], ['🐬', 'Yunuslar'], ['🐯', 'Kaplanlar'], ['🦉', 'Baykuşlar'], ['🐼', 'Pandalar'], ['🦊', 'Tilkiler'], ['🐧', 'Penguenler'], ['🦒', 'Zürafalar'], ['🐢', 'Kaplumbağalar'], ['🐝', 'Arılar'], ['🦋', 'Kelebekler']];
+let S = { classId: OA.classes.active()?.id || '__manual', manual: '', mode: 'count', num: 4, fun: true, leader: true, splitTalk: false, absent: {}, pairs: [], groups: [], ...OA.store.get(KEY, {}) };
+const save = () => OA.store.set(KEY, S);
+
+function students() {
+  if (S.classId === '__manual') return S.manual.split(/\r?\n/).map(x => x.trim()).filter(Boolean).map((name, i) => ({ id: 'm' + i + name, name }));
+  return OA.classes.get(S.classId)?.students || [];
+}
+const byId = () => Object.fromEntries(students().map(s => [s.id, s]));
+const talkers = () => new Set((OA.store.get('siraAyarlama.v1', null)?.students || []).filter(s => s.talk).map(s => OA.up(s.name)));
+
+// ---------- Kenar çubuğu ----------
+function renderSide() {
+  if (!OA.classes.list().length && S.classId !== '__manual') S.classId = '__manual';
+  OA.fillClassSelect($('#cls'), S.classId, { manual: true });
+  $('#manual').style.display = S.classId === '__manual' ? '' : 'none';
+  $('#manual').value = S.manual;
+  const list = students();
+  $('#chips').innerHTML = list.map(s => `<button class="schip ${S.absent[s.id] ? 'absent' : ''}" data-id="${esc(s.id)}">${esc(s.name)}</button>`).join('') || '<span class="small">Liste boş.</span>';
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $('#num').value = S.num;
+  const present = list.filter(s => !S.absent[s.id]).length;
+  const g = S.mode === 'count' ? Math.min(S.num, present) : Math.ceil(present / Math.max(1, S.num));
+  $('#numHint').textContent = present ? (S.mode === 'count' ? `grup → her grupta ~${Math.floor(present / Math.max(1, g))}-${Math.ceil(present / Math.max(1, g))} kişi` : `kişi → ${g} grup`) : '';
+  $('#fun').checked = S.fun; $('#leader').checked = S.leader; $('#splitTalk').checked = S.splitTalk;
+  const opts = '<option value="">Öğrenci…</option>' + list.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  $('#pa').innerHTML = opts; $('#pb').innerHTML = opts;
+  const map = byId();
+  S.pairs = S.pairs.filter(([a, b]) => map[a] && map[b]);
+  $('#pairs').innerHTML = S.pairs.map(([a, b], i) => `<div class="pair"><span>${esc(map[a].name)} ⇹ ${esc(map[b].name)}</span><button class="x" data-i="${i}">✕</button></div>`).join('') || '<div class="small">Yok</div>';
+}
+
+// ---------- Grup oluşturma ----------
+function make() {
+  const list = students().filter(s => !S.absent[s.id]);
+  if (list.length < 2) return OA.toast('Grup oluşturmak için en az 2 öğrenci gerekli');
+  const g = Math.max(1, Math.min(list.length, S.mode === 'count' ? S.num : Math.ceil(list.length / Math.max(1, S.num))));
+  const shuffle = a => a.sort(() => Math.random() - .5);
+  const talk = talkers();
+  const isTalk = s => S.splitTalk && talk.has(OA.up(s.name));
+  // Ayrı oturmalılar önce sırayla dağıtılır, sonra diğerleri; böylece gruplar hem eşit hem dengeli olur
+  const order = [...shuffle(list.filter(isTalk)), ...shuffle(list.filter(s => !isTalk(s)))];
+  const groups = Array.from({ length: g }, () => []);
+  order.forEach((s, i) => groups[i % g].push(s.id));
+  // Ayrı tutulacak ikililer için takas ile düzelt
+  const where = () => Object.fromEntries(groups.flatMap((m, gi) => m.map(id => [id, gi])));
+  const conflicts = () => { const w = where(); return S.pairs.filter(([a, b]) => w[a] != null && w[a] === w[b]); };
+  for (let t = 0; t < 400 && conflicts().length; t++) {
+    const [a] = conflicts()[0], w = where(), ga = w[a];
+    const gb = (ga + 1 + (Math.random() * (g - 1) | 0)) % g;
+    const cand = groups[gb][Math.random() * groups[gb].length | 0];
+    if (cand == null || isTalk(byId()[a]) !== isTalk(byId()[cand])) continue;
+    groups[ga][groups[ga].indexOf(a)] = cand; groups[gb][groups[gb].indexOf(cand)] = a;
+  }
+  const funNames = shuffle([...FUN]);
+  S.groups = groups.map((m, i) => ({
+    name: S.fun ? funNames[i % FUN.length][1] : `${i + 1}. Grup`,
+    emoji: S.fun ? funNames[i % FUN.length][0] : '',
+    color: COLORS[i % COLORS.length],
+    members: m,
+    leader: S.leader ? m[Math.random() * m.length | 0] : null
+  }));
+  save(); renderGroups();
+  const c = conflicts().length;
+  if (c) OA.toast(`${c} ikili aynı grupta kalmak zorunda kaldı`);
+}
+
+function renderGroups() {
+  const map = byId();
+  $('#printHead').textContent = `${S.classId === '__manual' ? '' : (OA.classes.get(S.classId)?.name || '') + ' · '}Gruplar`;
+  if (!S.groups.length) {
+    $('#groups').innerHTML = '<div class="empty"><div class="big">👥</div>Ayarları yapıp "Grupları Oluştur"a basın.</div>';
+    return;
+  }
+  $('#groups').innerHTML = `<div class="groups">${S.groups.map((g, gi) => `
+    <div class="gcard" data-g="${gi}" style="--gc:${g.color}">
+      <div class="ghead">${g.emoji ? `<span class="ge">${g.emoji}</span>` : ''}<input value="${esc(g.name)}" data-gname="${gi}" aria-label="Grup adı"><span class="cnt">${g.members.length} kişi</span></div>
+      <ul class="members">${g.members.filter(id => map[id]).map(id => `
+        <li class="mem ${g.leader === id ? 'leader' : ''}" draggable="true" data-id="${esc(id)}">
+          <span class="av" style="--h:${OA.hue(map[id].name)}">${esc(OA.initials(map[id].name))}</span>${esc(map[id].name)}
+          <span class="star ${g.leader === id ? 'on' : ''}" data-star title="Grup başkanı yap">⭐</span></li>`).join('')}
+      </ul>
+    </div>`).join('')}</div>`;
+}
+
+// ---------- Etkileşim ----------
+$('#cls').addEventListener('change', e => {
+  if (e.target.value === '__manage') return;
+  S.classId = e.target.value; S.absent = {}; S.groups = []; S.pairs = [];
+  if (S.classId !== '__manual') OA.classes.setActive(S.classId);
+  save(); renderSide(); renderGroups();
+});
+$('#manual').addEventListener('input', e => { S.manual = e.target.value; save(); renderSide(); });
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  S.absent[b.dataset.id] ? delete S.absent[b.dataset.id] : (S.absent[b.dataset.id] = 1);
+  save(); renderSide();
+});
+$('#modeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.mode = b.dataset.mode; save(); renderSide(); } });
+$('#num').addEventListener('input', e => { S.num = Math.max(1, Math.min(20, +e.target.value || 1)); save(); renderSide(); });
+for (const k of ['fun', 'leader', 'splitTalk']) $('#' + k).onchange = e => { S[k] = e.target.checked; save(); };
+$('#btnPair').onclick = () => {
+  const a = $('#pa').value, b = $('#pb').value;
+  if (!a || !b || a === b) return OA.toast('İki farklı öğrenci seçin');
+  if (!S.pairs.some(p => p.includes(a) && p.includes(b))) S.pairs.push([a, b]);
+  save(); renderSide();
+};
+$('#pairs').addEventListener('click', e => { if (e.target.dataset.i != null) { S.pairs.splice(+e.target.dataset.i, 1); save(); renderSide(); } });
+$('#btnMake').onclick = make;
+
+const gw = $('#groups');
+gw.addEventListener('input', e => { if (e.target.dataset.gname) { S.groups[+e.target.dataset.gname].name = e.target.value; save(); } });
+gw.addEventListener('click', e => {
+  if (e.target.dataset.star == null) return;
+  const li = e.target.closest('.mem'), g = S.groups[+li.closest('.gcard').dataset.g];
+  g.leader = g.leader === li.dataset.id ? null : li.dataset.id; save(); renderGroups();
+});
+gw.addEventListener('dragstart', e => { const li = e.target.closest('.mem'); if (li) e.dataTransfer.setData('text/plain', li.dataset.id); });
+gw.addEventListener('dragover', e => { const c = e.target.closest('.gcard'); if (c) { e.preventDefault(); c.classList.add('over'); } });
+gw.addEventListener('dragleave', e => { const c = e.target.closest('.gcard'); if (c && !c.contains(e.relatedTarget)) c.classList.remove('over'); });
+gw.addEventListener('drop', e => {
+  const c = e.target.closest('.gcard'); if (!c) return;
+  e.preventDefault(); c.classList.remove('over');
+  const id = e.dataTransfer.getData('text/plain'), to = S.groups[+c.dataset.g];
+  for (const g of S.groups) { g.members = g.members.filter(x => x !== id); if (g.leader === id && g !== to) g.leader = null; }
+  to.members.push(id); save(); renderGroups();
+});
+
+$('#btnCopy').onclick = async () => {
+  if (!S.groups.length) return OA.toast('Önce grupları oluşturun');
+  const map = byId();
+  const txt = S.groups.map(g => `${g.emoji ? g.emoji + ' ' : ''}${g.name}\n` + g.members.filter(id => map[id]).map(id => `- ${map[id].name}${g.leader === id ? ' ⭐' : ''}`).join('\n')).join('\n\n');
+  try { await navigator.clipboard.writeText(txt); OA.toast('Gruplar panoya kopyalandı'); } catch { OA.toast('Kopyalanamadı'); }
+};
+$('#btnFull').onclick = () => { const w = $('#groupsWrap'); document.fullscreenElement ? document.exitFullscreen() : w.requestFullscreen?.(); };
+$('#btnPrint').onclick = () => window.print();
+
+renderSide(); renderGroups();
+</script>
+</body>
+</html>

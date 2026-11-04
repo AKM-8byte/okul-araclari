@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sınıf Not Çizelgesi · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<script src="../assets/vendor/xlsx.full.min.js"></script>
+<style id="pageSize">@page{size:A4 portrait;margin:12mm}</style>
+<style>
+  :root{--t-sinav:#6366f1;--t-perf:#0d9488;--t-proje:#d97706}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--t-sinav:#a5b4fc;--t-perf:#5eead4;--t-proje:#fcd34d}}
+  :root[data-theme="dark"]{--t-sinav:#a5b4fc;--t-perf:#5eead4;--t-proje:#fcd34d}
+
+  .head{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:12px;align-items:end;margin-bottom:16px}
+  .modebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .modebar .seg button{padding:8px 16px;font-size:15px}
+
+  /* ---------- İstatistik kartları ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .stat{display:flex;gap:10px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:0 4px 0 var(--pop)}
+  .stat .si{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:20px;background:var(--brand-soft);flex:none}
+  .stat b{display:block;font-size:22px;font-weight:900;line-height:1.1}
+  .stat span{font-size:12.5px;color:var(--muted);font-weight:800}
+  .stat.dist-card{grid-column:span 2;flex-direction:column;align-items:stretch;gap:4px}
+  .dist{display:flex;align-items:flex-end;gap:6px;height:56px;padding-bottom:18px}
+  .dist div{flex:1;border-radius:6px 6px 2px 2px;min-height:3px;position:relative}
+  .dist small{position:absolute;bottom:-17px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--muted);font-weight:800;white-space:nowrap}
+
+  /* ---------- Sütun sayacı ---------- */
+  .counters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .counter{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line);border-left:5px solid var(--tc);border-radius:14px;padding:6px 8px 6px 12px;background:var(--surface-2)}
+  .counter b{font-weight:900;font-size:13.5px;min-width:86px}
+  .counter .n{font-weight:900;font-size:18px;min-width:22px;text-align:center;color:var(--tc)}
+  .counter button{font:inherit;font-weight:900;width:30px;height:30px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer}
+  .counter button:hover{border-color:var(--tc);color:var(--tc)}
+
+  /* ---------- Not giriş tablosu ---------- */
+  .gridwrap{overflow:auto;max-height:68vh;border-radius:14px;border:1.5px solid var(--line-2)}
+  table.grid{border-collapse:separate;border-spacing:0;min-width:100%}
+  .grid th,.grid td{border-bottom:1px solid var(--line-2);padding:4px 6px;text-align:center;white-space:nowrap}
+  .grid thead tr:first-child th{position:sticky;top:0;z-index:2;background:var(--surface);padding:7px 6px 3px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;border-bottom:none}
+  .grid thead tr:nth-child(2) th{position:sticky;top:30px;z-index:2;background:var(--surface);border-bottom:1.5px solid var(--line);padding:4px 6px 8px;font-size:12.5px;color:var(--muted)}
+  .grid .gband{color:var(--tc)}
+  .grid .gband span{display:block;border-bottom:3px solid var(--tc);padding-bottom:3px;border-radius:2px}
+  .grid tfoot td{position:sticky;bottom:0;background:var(--brand-soft);font-weight:900;color:var(--brand-ink);border:none;padding:8px 6px}
+  .grid .stick{position:sticky;left:0;z-index:1;background:var(--surface)}
+  .grid thead .stick{z-index:3}
+  .grid tfoot .stick{background:var(--brand-soft)}
+  .grid tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--surface-2) 70%,var(--surface))}
+  .grid tbody tr:hover td{background:var(--brand-soft)}
+  .grid .ix{color:var(--muted);font-weight:800;width:34px}
+  .who{display:flex;align-items:center;gap:8px;min-width:210px}
+  .av{width:30px;height:30px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-weight:900;font-size:11.5px;background:hsl(var(--h) 65% 52%)}
+  .nmin,.noin{font:inherit;font-weight:800;border:1.5px solid transparent;background:transparent;color:var(--text);border-radius:8px;padding:5px 6px;width:100%}
+  .noin{width:62px;text-align:center;color:var(--muted)}
+  .nmin:focus,.noin:focus{outline:none;border-color:var(--brand);background:var(--surface)}
+  .cell{width:58px;text-align:center;font:inherit;font-weight:900;border:1.5px solid var(--line-2);border-radius:9px;padding:6px 2px;background:var(--surface);color:var(--text);-moz-appearance:textfield}
+  .cell::-webkit-inner-spin-button{display:none}
+  .cell:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--brand) 22%,transparent)}
+  .cell.b1{color:var(--bad);background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 35%,transparent)}
+  .cell.b2{color:var(--warn);background:var(--warn-soft)}
+  .cell.b5{color:var(--ok);background:var(--ok-soft)}
+  .colh{display:flex;align-items:center;gap:2px;justify-content:center}
+  .colh input{font:inherit;font-weight:900;color:var(--text);border:1.5px solid transparent;background:transparent;border-radius:7px;width:96px;text-align:center;padding:3px}
+  .colh input:focus{outline:none;border-color:var(--brand)}
+  .avgc{min-width:96px}
+  .avgbox{display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:900}
+  .bar{width:70px;height:6px;border-radius:3px;background:var(--line-2);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:3px}
+  .empty-state{text-align:center;padding:44px 16px;color:var(--muted);font-weight:700;white-space:normal}
+  .empty-state .big{font-size:46px}
+
+  /* ---------- Yazdırma tasarımı ---------- */
+  .print-layout{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+  .print-layout > *{min-width:0}
+  .psec{border-top:1.5px solid var(--line-2);padding-top:12px;margin-top:12px}
+  .psec:first-of-type{border-top:none;padding-top:0;margin-top:0}
+  .psec h3{font-size:14px;font-weight:900;margin:0 0 10px}
+  .psec .stack{gap:10px}
+  .accents{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .accents button{width:30px;height:30px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
+  .accents button.on{box-shadow:0 0 0 3px var(--text)}
+  .accents input[type=color]{width:38px;height:32px;border:1.5px solid var(--line);border-radius:9px;padding:2px;background:var(--surface-2);cursor:pointer}
+  .preview-sticky{position:sticky;top:76px}
+  .stage{background:var(--line-2);border-radius:16px;padding:18px;overflow:auto;max-height:calc(100vh - 170px)}
+  .scaler{transform-origin:top left;margin:0 auto}
+
+  /* Kâğıt: ekran temasından bağımsız, her zaman beyaz */
+  .sheet{
+    --acc:#ea580c;--acc-soft:color-mix(in srgb,var(--acc) 12%,#fff);
+    width:794px;background:#fff;color:#1f1f1f;padding:44px 46px;font-family:"Nunito",system-ui,sans-serif;font-size:13px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.35);-webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .sheet.land{width:1123px}
+  .sheet.font-resmi{font-family:"Times New Roman",Times,serif}
+  .sheet.fs-s{font-size:11.5px} .sheet.fs-l{font-size:15px}
+  .sheet.bw{--acc:#333;--acc-soft:#eee}
+  .sh-head{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--acc)}
+  .sh-okul{font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.95em;color:#555}
+  .sh-head h1{margin:4px 0 6px;font-size:1.75em;font-weight:900;color:var(--acc)}
+  .sheet.bw .sh-head h1{color:#111}
+  .sh-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 16px;font-weight:700;color:#444}
+  .sh-meta b{color:#111}
+  table.sh-tbl{width:100%;border-collapse:collapse}
+  .sh-tbl th,.sh-tbl td{border:1px solid #c9c9c9;padding:5px 6px;text-align:center}
+  .sheet.dn-tight .sh-tbl td,.sheet.dn-tight .sh-tbl th{padding:2px 5px}
+  .sheet.dn-wide .sh-tbl td,.sheet.dn-wide .sh-tbl th{padding:9px 7px}
+  .sh-tbl th{background:var(--acc-soft);font-weight:900}
+  .sh-tbl tr.grp th{background:var(--acc);color:#fff;font-size:.85em;letter-spacing:.06em;text-transform:uppercase}
+  .sheet.bw .sh-tbl tr.grp th{background:#444}
+  .sh-tbl td.name{text-align:left;font-weight:700;white-space:nowrap}
+  .sh-tbl td.avg{font-weight:900}
+  .sheet.zebra .sh-tbl tbody tr:nth-child(even) td{background:#f7f7f7}
+  .sheet.hl .sh-tbl td.fail{color:#c81e3a;font-weight:900;background:#ffecef}
+  .sheet.bw.hl .sh-tbl td.fail{color:#000;background:#e5e5e5;text-decoration:underline}
+  .sh-tbl tfoot td{font-weight:900;background:var(--acc-soft)}
+  .sh-stats{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .sh-stats div{flex:1;min-width:110px;border:1.5px solid var(--acc);border-radius:10px;padding:7px 10px}
+  .sh-stats small{display:block;color:#666;font-weight:800;font-size:.85em}
+  .sh-stats b{font-size:1.25em;font-weight:900}
+  .sh-dist{margin-top:14px;break-inside:avoid}
+  .sh-stats,.sh-note{break-inside:avoid}
+  .sh-dist h4,.sh-note h4{margin:0 0 6px;font-size:1em}
+  .sh-dist .row2{display:flex;align-items:center;gap:8px;margin:3px 0;font-weight:700}
+  .sh-dist .row2 span:first-child{width:80px}
+  .sh-dist .track{flex:1;height:12px;background:#f0f0f0;border-radius:6px;overflow:hidden}
+  .sh-dist .track i{display:block;height:100%;background:var(--acc)}
+  .sh-note{margin-top:14px;white-space:pre-line}
+  .sh-signs{display:flex;justify-content:space-between;gap:30px;margin-top:40px;break-inside:avoid}
+  .sh-signs div{flex:1;text-align:center;font-weight:700}
+  .sh-signs .line{border-bottom:1px dotted #555;height:40px;margin:0 20% 6px}
+  .sh-signs small{display:block;color:#555;font-weight:700}
+  .sh-empty{text-align:center;color:#888;padding:40px;font-weight:700}
+
+  .print-holder{display:none}
+  @media (max-width:1020px){.print-layout{grid-template-columns:1fr}.preview-sticky{position:static}.stage{max-height:none}}
+  @media (max-width:760px){.head{grid-template-columns:1fr 1fr}.stat.dist-card{grid-column:span 1}}
+  @media print{
+    body > *:not(.page){display:none!important}
+    .page{padding:0!important;max-width:none!important}
+    .page > *:not(.print-holder){display:none!important}
+    .print-holder{display:block!important}
+    .sheet{width:auto!important;padding:0;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="head no-print">
+    <label class="field">Sınıf / Şube<input class="input" data-s="sinif" placeholder="ör. 9-A"></label>
+    <label class="field">Ders<input class="input" data-s="ders" placeholder="ör. Matematik"></label>
+    <label class="field">Öğretmen<input class="input" data-s="ogretmen" placeholder="ör. Ayşe Yılmaz"></label>
+    <label class="field">Dönem<select class="input" data-s="donem"><option>1. Dönem</option><option>2. Dönem</option><option>Yıl Sonu</option></select></label>
+    <div class="row">
+      <button class="btn" id="btnPaste">📋 Yapıştır</button>
+      <button class="btn" id="btnXls">📂 Excel'den</button>
+      <button class="btn" id="btnCls" title="Sınıflarım'daki bir sınıfı ekle">📚 Sınıflarımdan</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+  </div>
+
+  <div class="modebar no-print">
+    <div class="seg" id="modeSeg"><button data-mode="edit">✏️ Not Girişi</button><button data-mode="print">🖨️ Yazdırma Tasarımı</button></div>
+    <span class="spacer"></span>
+    <button class="btn" id="btnExport">📥 Excel'e aktar</button>
+    <button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button>
+  </div>
+
+  <!-- Not girişi -->
+  <section id="editView">
+    <div class="stats" id="stats"></div>
+    <div class="panel">
+      <h2><span><span class="h-ic">📊</span> Not çizelgesi</span>
+        <span class="row">
+          <select class="input" id="sort" style="width:auto"><option value="">Sıralama: Eklenme</option><option value="no">Okul numarasına göre</option><option value="name">Ada göre</option><option value="avg">Ortalamaya göre</option></select>
+          <button class="btn sm danger" id="btnReset">Temizle</button>
+        </span></h2>
+      <div class="counters" id="counters"></div>
+      <div class="gridwrap"><table class="grid" id="grid"></table></div>
+      <div class="row" style="margin-top:12px;flex-wrap:nowrap;max-width:520px">
+        <input class="input" id="newNo" placeholder="No" style="width:80px;flex:none">
+        <input class="input" id="newName" placeholder="Öğrenci adı yazıp Enter'a basın…">
+        <button class="btn" id="btnAdd">Ekle</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Yazdırma tasarımı -->
+  <section id="printView" class="print-layout">
+    <div class="panel" id="pset"></div>
+    <div class="preview-sticky">
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Kâğıt önizlemesi</span><span class="small">Yazdırınca tam olarak böyle çıkar</span></h2>
+        <div class="stage" id="stage"><div class="scaler" id="scaler"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="print-holder" id="printHolder"></div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '📊', title: 'Sınıf Not Çizelgesi',
+  help: {
+    key: 'not-cizelgesi', emoji: '📊', title: 'Bu bir sınıf not çizelgesidir',
+    intro: 'Sınıfınızın notlarını tek tabloda tutar, ortalamaları hesaplar ve istediğiniz tasarımda yazdırır. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '👥', title: 'Öğrencileri ekleyin', text: 'Numara ve ismi alt kutuya yazın, "Yapıştır" ile toplu ekleyin, Excel dosyası yükleyin ya da Sınıflarım\'daki bir sınıfı tek tıkla ekleyin.' },
+      { icon: '➕', title: 'Sınav ve performans sayısını ayarlayın', text: 'Tablonun üstündeki − / + düğmeleriyle yazılı sınav, performans ve proje sütunlarını ekleyip çıkarın. Sütun adlarına tıklayıp değiştirebilirsiniz.' },
+      { icon: '⌨️', title: 'Notları girin', text: 'Kutuya notu yazıp Enter\'a basınca alttaki öğrenciye geçer. Ortalama, puan ve istatistikler kendiliğinden hesaplanır.' },
+      { icon: '🎨', title: 'Yazdırma tasarımını seçin', text: '"Yazdırma Tasarımı" sekmesinde hangi sütunların (Durum, Puan, Ortalama…) ve bölümlerin çıkacağını, renkleri, yazı boyutunu ve sayfa yönünü siz belirleyin.' },
+      { icon: '🖨️', title: 'Yazdırın ya da Excel\'e aktarın', text: 'Önizlemede gördüğünüz kâğıt aynen yazdırılır. Veriler bu cihazda saklanır.' }
+    ]
+  }
+});
+
+const KEY = 'oa.notCizelgesi';
+const $ = s => document.querySelector(s);
+const esc = OA.esc, toast = OA.toast;
+let n = 0;
+const uid = () => Date.now().toString(36) + (n++);
+const TYPES = {
+  sinav: { label: 'Yazılı Sınav', short: 'Sınav', group: 'Yazılı Sınavlar', max: 6 },
+  perf: { label: 'Performans', short: 'Performans', group: 'Performans', max: 6 },
+  proje: { label: 'Proje', short: 'Proje', group: 'Proje', max: 3 }
+};
+const ORDER = Object.keys(TYPES);
+const eduYear = () => { const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`; };
+const defCols = () => [['sinav', 2], ['perf', 2]].flatMap(([type, c]) => Array.from({ length: c }, () => ({ id: uid(), type, name: '' })));
+const DEF_P = {
+  okul: '', yil: eduYear(), title: '', mudur: '', note: '',
+  showOkul: true, showMeta: true, showTarih: true,
+  cols: { ix: true, no: true, sinav: true, perf: true, proje: true, avg: true, puan: true, durum: true },
+  groupRow: true, classAvgRow: true, stats: true, dist: false, sign: true,
+  color: true, accent: '#ea580c', highlight: true, zebra: true,
+  orient: 'portrait', fontSize: 'm', density: 'normal', font: 'modern', decimals: 2, emptyMark: '—'
+};
+
+let S = OA.store.get(KEY, null) || { sinif: '', ders: '', ogretmen: '', donem: '1. Dönem', sort: '', mode: 'edit', cols: defCols(), students: [] };
+// Önceki sürümün kayıtlarını yeni biçime çevir
+for (const c of S.cols) if (!c.type) c.type = /perf/i.test(c.name) ? 'perf' : /proje/i.test(c.name) ? 'proje' : 'sinav';
+for (const s of S.students) if (s.no == null) s.no = '';
+S.P = { ...DEF_P, ...S.P, cols: { ...DEF_P.cols, ...S.P?.cols } };
+S.mode = S.mode || 'edit'; S.donem = S.donem || '1. Dönem';
+const save = () => OA.store.set(KEY, S);
+
+const up = s => String(s ?? '').trim().replace(/\s+/g, ' ').toLocaleUpperCase('tr');
+const num = v => v === '' || v == null || isNaN(+v) ? null : Math.max(0, Math.min(100, +v));
+const avgOf = st => { const v = S.cols.map(c => num(st.g[c.id])).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const cellCls = v => { const x = num(v); return x == null ? '' : x < 50 ? 'b1' : x < 60 ? 'b2' : x >= 85 ? 'b5' : ''; };
+const initials = name => { const w = name.split(' ').filter(Boolean); return (w[0]?.[0] || '?') + (w.length > 1 ? w[w.length - 1][0] : ''); };
+const hue = name => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+const colAvg = c => { const v = S.students.map(s => num(s.g[c.id])).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+const bandColor = b => ({ ok: 'var(--ok)', info: 'var(--info)', warn: 'var(--warn)', bad: 'var(--bad)' }[b?.cls] || 'var(--line)');
+
+// Sütunlar türe göre gruplu tutulur; varsayılan adlar ("2. Sınav") yeniden numaralanır, elle verilen adlar korunur
+function normalizeCols() {
+  S.cols.sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type));
+  for (const t of ORDER) {
+    const list = S.cols.filter(c => c.type === t);
+    list.forEach((c, i) => {
+      if (!c.name || /^\d+\. (Sınav|Yazılı|Performans|Proje)$|^Proje$/.test(c.name)) c.name = t === 'proje' && list.length === 1 ? 'Proje' : `${i + 1}. ${TYPES[t].short}`;
+    });
+  }
+}
+
+function ordered() {
+  const list = [...S.students];
+  if (S.sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+  if (S.sort === 'no') list.sort((a, b) => (+a.no || 1e9) - (+b.no || 1e9));
+  if (S.sort === 'avg') list.sort((a, b) => (avgOf(b) ?? -1) - (avgOf(a) ?? -1));
+  return list;
+}
+
+// ---------- Not girişi ----------
+function renderCounters() {
+  $('#counters').innerHTML = ORDER.map(t => {
+    const c = S.cols.filter(x => x.type === t).length;
+    return `<div class="counter" style="--tc:var(--t-${t})"><b>${TYPES[t].label}</b>
+      <button data-step="${t}" data-d="-1" title="Azalt" ${c ? '' : 'disabled'}>−</button><span class="n">${c}</span>
+      <button data-step="${t}" data-d="1" title="Artır" ${c >= TYPES[t].max ? 'disabled' : ''}>+</button></div>`;
+  }).join('');
+}
+
+function renderGrid() {
+  const grid = $('#grid');
+  if (!S.students.length) {
+    grid.innerHTML = `<tbody><tr><td class="empty-state"><div class="big">👥</div>Henüz öğrenci yok. Aşağıdan numara ve isim ekleyin ya da yukarıdaki düğmelerle liste yükleyin.</td></tr></tbody>`;
+    return;
+  }
+  const groups = ORDER.map(t => [t, S.cols.filter(c => c.type === t).length]).filter(([, k]) => k);
+  grid.innerHTML = `
+    <thead>
+      <tr><th class="stick" colspan="3"></th>
+        ${groups.map(([t, k]) => `<th colspan="${k}" class="gband" style="--tc:var(--t-${t})"><span>${TYPES[t].group}</span></th>`).join('')}
+        <th colspan="3"></th></tr>
+      <tr><th class="ix stick">#</th><th>No</th><th style="text-align:left">Ad Soyad</th>
+        ${S.cols.map(c => `<th><div class="colh"><input value="${esc(c.name)}" data-col="${c.id}" aria-label="Sütun adı"></div></th>`).join('')}
+        <th>Ortalama</th><th>Puan</th><th></th></tr>
+    </thead>
+    <tbody>${ordered().map((st, i) => `
+      <tr data-id="${st.id}">
+        <td class="ix stick">${i + 1}</td>
+        <td><input class="noin" value="${esc(st.no)}" data-no="${st.id}" aria-label="Okul numarası"></td>
+        <td style="text-align:left"><div class="who"><span class="av" style="--h:${hue(st.name)}">${esc(initials(st.name))}</span>
+          <input class="nmin" value="${esc(st.name)}" data-name="${st.id}" aria-label="Öğrenci adı"></div></td>
+        ${S.cols.map((c, ci) => `<td><input class="cell ${cellCls(st.g[c.id])}" type="number" min="0" max="100" inputmode="numeric" value="${esc(st.g[c.id] ?? '')}" data-sid="${st.id}" data-cid="${c.id}" data-ci="${ci}" data-ri="${i}"></td>`).join('')}
+        <td class="avgc"></td><td class="dur"></td>
+        <td><button class="x" data-del="${st.id}" title="Öğrenciyi sil">✕</button></td>
+      </tr>`).join('')}
+    </tbody>
+    <tfoot><tr><td class="stick"></td><td></td><td style="text-align:left">Sınıf ortalaması</td>${S.cols.map(c => `<td data-favg="${c.id}"></td>`).join('')}<td data-favg="all"></td><td></td><td></td></tr></tfoot>`;
+  updateDerived();
+}
+
+// Odak kaybolmasın diye not girerken tabloyu baştan çizmek yerine sadece hesaplanan alanları günceller
+function updateDerived() {
+  document.querySelectorAll('#grid tbody tr[data-id]').forEach(tr => {
+    const st = S.students.find(s => s.id === tr.dataset.id), a = avgOf(st), b = OA.band(a);
+    tr.querySelector('.avgc').innerHTML = a == null ? '<span class="muted">—</span>'
+      : `<div class="avgbox">${OA.fmt(a)}<span class="bar"><i style="width:${a}%;background:${bandColor(b)}"></i></span></div>`;
+    tr.querySelector('.dur').innerHTML = b ? `<span class="chip ${b.cls}">${b.n} · ${b.label}</span>` : '';
+  });
+  for (const c of S.cols) { const td = document.querySelector(`[data-favg="${c.id}"]`); if (td) td.textContent = OA.fmt(colAvg(c)); }
+  const all = S.students.map(avgOf).filter(x => x != null);
+  const tdAll = document.querySelector('[data-favg="all"]');
+  if (tdAll) tdAll.textContent = all.length ? OA.fmt(all.reduce((a, b) => a + b, 0) / all.length) : '—';
+  renderStats();
+}
+
+function summary() {
+  const avgs = S.students.map(avgOf).filter(x => x != null);
+  return {
+    avgs, cls: avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null,
+    max: avgs.length ? Math.max(...avgs) : null, min: avgs.length ? Math.min(...avgs) : null,
+    pass: avgs.filter(x => x >= 50).length,
+    bands: [1, 2, 3, 4, 5].map(k => avgs.filter(x => OA.band(x).n === k).length)
+  };
+}
+function renderStats() {
+  const s = summary(), maxB = Math.max(1, ...s.bands);
+  const colors = ['var(--bad)', 'var(--warn)', 'var(--info)', 'var(--ok)', 'var(--ok)'];
+  $('#stats').innerHTML = `
+    <div class="stat"><span class="si">👥</span><div><b>${S.students.length}</b><span>Öğrenci</span></div></div>
+    <div class="stat"><span class="si">📊</span><div><b>${OA.fmt(s.cls)}</b><span>Sınıf ortalaması</span></div></div>
+    <div class="stat"><span class="si">🏆</span><div><b>${OA.fmt(s.max)}</b><span>En yüksek</span></div></div>
+    <div class="stat"><span class="si">📉</span><div><b>${OA.fmt(s.min)}</b><span>En düşük</span></div></div>
+    <div class="stat"><span class="si">✅</span><div><b><span style="color:var(--ok)">${s.pass}</span> / <span style="color:var(--bad)">${s.avgs.length - s.pass}</span></b><span>Geçen / Kalan</span></div></div>
+    <div class="stat dist-card"><span>Not dağılımı (5'lik sistem)</span>
+      <div class="dist">${s.bands.map((c, i) => `<div style="height:${c / maxB * 100}%;background:${colors[i]}" title="${i + 1}: ${c} öğrenci"><small>${i + 1} · ${c} kişi</small></div>`).join('')}</div></div>`;
+}
+
+$('#counters').addEventListener('click', e => {
+  const b = e.target.closest('[data-step]'); if (!b) return;
+  const t = b.dataset.step;
+  if (+b.dataset.d > 0) S.cols.push({ id: uid(), type: t, name: '' });
+  else {
+    const last = S.cols.filter(c => c.type === t).pop(); if (!last) return;
+    if (S.students.some(s => num(s.g[last.id]) != null) && !confirm(`"${last.name}" sütununda girilmiş notlar var. Silinsin mi?`)) return;
+    S.cols = S.cols.filter(c => c !== last);
+    for (const s of S.students) delete s.g[last.id];
+  }
+  normalizeCols(); save(); renderEdit();
+});
+
+$('#grid').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.cid) {
+    S.students.find(s => s.id === t.dataset.sid).g[t.dataset.cid] = t.value;
+    t.className = 'cell ' + cellCls(t.value);
+    save(); updateDerived();
+  } else if (t.dataset.col) { S.cols.find(c => c.id === t.dataset.col).name = t.value; save(); }
+  else if (t.dataset.name) { S.students.find(s => s.id === t.dataset.name).name = t.value; save(); }
+  else if (t.dataset.no) { S.students.find(s => s.id === t.dataset.no).no = t.value.trim(); save(); }
+});
+$('#grid').addEventListener('change', e => {
+  if (!e.target.dataset.name) return;
+  const st = S.students.find(s => s.id === e.target.dataset.name);
+  st.name = e.target.value = up(e.target.value); save();
+  e.target.previousElementSibling.textContent = initials(st.name);
+});
+// Enter / oklar ile hücreler arasında gezinme
+$('#grid').addEventListener('keydown', e => {
+  const t = e.target; if (!t.dataset.cid) return;
+  const ri = +t.dataset.ri, ci = +t.dataset.ci;
+  const go = (r, c) => { const el = document.querySelector(`.cell[data-ri="${r}"][data-ci="${c}"]`); if (el) { e.preventDefault(); el.focus(); el.select(); } };
+  if (e.key === 'Enter' || e.key === 'ArrowDown') go(ri + 1, ci);
+  else if (e.key === 'ArrowUp') go(ri - 1, ci);
+});
+$('#grid').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const st = S.students.find(s => s.id === b.dataset.del);
+  if (!confirm(`${st.name} silinsin mi?`)) return;
+  S.students = S.students.filter(s => s !== st); save(); renderEdit();
+});
+
+$('#sort').onchange = e => { S.sort = e.target.value; save(); renderEdit(); };
+document.querySelectorAll('[data-s]').forEach(el => el.addEventListener('input', () => { S[el.dataset.s] = el.value; save(); renderSheet(); }));
+
+function addStudents(list) {
+  const have = new Set(S.students.map(s => s.name));
+  let added = 0;
+  for (const { no = '', name: raw } of list) {
+    const name = up(raw);
+    if (name && !/^\d+$/.test(name) && !have.has(name)) { S.students.push({ id: uid(), no: String(no).trim(), name, g: {} }); have.add(name); added++; }
+  }
+  save(); renderEdit();
+  return added;
+}
+function addOne() {
+  const v = $('#newName').value; if (!v.trim()) return;
+  addStudents([{ no: $('#newNo').value, name: v }]);
+  $('#newName').value = ''; $('#newNo').value = '';
+  $('#newNo').focus();
+}
+$('#btnAdd').onclick = addOne;
+$('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') addOne(); });
+$('#newNo').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newName').focus(); });
+
+$('#btnCls').onclick = async () => {
+  const c = await OA.pickClass({ title: 'Hangi sınıfın öğrencileri eklensin?' });
+  if (!c) return;
+  if (!S.sinif) { S.sinif = c.name; document.querySelector('[data-s="sinif"]').value = c.name; }
+  toast(`${addStudents(c.students.map(s => ({ no: s.no, name: s.name })))} öğrenci eklendi`);
+};
+
+$('#btnPaste').onclick = () => {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `
+    <div class="modal">
+      <div class="modal-hero"><div class="modal-emoji">📋</div><div><div class="eyebrow">Toplu ekle</div><h2>Öğrenci listesini yapıştırın</h2></div></div>
+      <p class="modal-intro">Her satıra bir öğrenci gelecek şekilde yapıştırın. Excel'den "No" ve "Ad Soyad" sütunlarını birlikte kopyalarsanız numaralar da alınır.</p>
+      <textarea class="input" rows="10" placeholder="123	AHMET YILMAZ&#10;124	AYŞE KAYA&#10;…"></textarea>
+      <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Ekle</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const ta = wrap.querySelector('textarea'); ta.focus();
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const rows = ta.value.split(/\r?\n/).map(l => {
+      const parts = l.split('\t').map(x => x.trim()).filter(Boolean);
+      if (parts.length > 1 && /^\d+$/.test(parts[0])) return { no: parts[0], name: parts[1] };
+      const m = l.trim().match(/^(\d+)[.)\s-]+(.+)$/);
+      return m ? { no: m[1], name: m[2] } : { name: parts[0] || '' };
+    });
+    const c = addStudents(rows);
+    wrap.remove(); toast(`${c} öğrenci eklendi`);
+  };
+};
+
+// Excel: ad sütunu, "No" sütunu ve sayısal not sütunları otomatik bulunur
+$('#btnXls').onclick = () => $('#file').click();
+$('#file').onchange = e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  if (typeof XLSX === 'undefined') return toast('Excel okuyucu yüklenemedi, internet bağlantınızı kontrol edin');
+  const rd = new FileReader();
+  rd.onload = ev => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' }).filter(r => r.some(c => String(c).trim()));
+      if (!rows.length) return toast('Dosyada veri yok');
+      const isNum = v => v !== '' && !isNaN(+v);
+      const hasHead = rows[0].some(c => String(c).trim() && !isNum(c));
+      const head = (hasHead ? rows[0] : []).map(h => String(h || '').trim());
+      const data = hasHead ? rows.slice(1) : rows;
+      const width = Math.max(...rows.map(r => r.length));
+      let nameCol = -1;
+      for (let c = 0; c < width && nameCol < 0; c++) if (data.filter(r => String(r[c]).trim() && !isNum(r[c])).length > data.length / 2) nameCol = c;
+      if (nameCol < 0) return toast('Ad sütunu bulunamadı');
+      const noCol = head.findIndex(h => /^(no|numara|okul no|öğrenci no|ogrenci no)$/i.test(h));
+      const gradeCols = [];
+      for (let c = 0; c < width; c++) {
+        if (c === nameCol || c === noCol || /^(sıra|#|s\.?no)$/i.test(head[c] || '')) continue;
+        const vals = data.map(r => r[c]).filter(v => String(v).trim());
+        if (vals.length && vals.every(isNum) && vals.every(v => +v >= 0 && +v <= 100)) gradeCols.push(c);
+      }
+      if (S.students.length && !confirm('Mevcut çizelge dosyadaki verilerle değiştirilsin mi?')) return;
+      S.cols = gradeCols.length
+        ? gradeCols.map(c => ({ id: uid(), type: /perf/i.test(head[c] || '') ? 'perf' : /proje/i.test(head[c] || '') ? 'proje' : 'sinav', name: head[c] || '' }))
+        : defCols();
+      S.students = data.filter(r => up(r[nameCol])).map(r => ({
+        id: uid(), no: noCol >= 0 ? String(r[noCol]).trim() : '', name: up(r[nameCol]),
+        g: Object.fromEntries(gradeCols.map((c, i) => [S.cols[i].id, String(r[c]).trim()]))
+      }));
+      normalizeCols(); save(); renderEdit(); toast(`${S.students.length} öğrenci, ${gradeCols.length} not sütunu yüklendi`);
+    } catch (err) { console.error(err); toast('Dosya okunamadı: ' + err.message); }
+  };
+  rd.readAsArrayBuffer(f);
+};
+
+$('#btnExport').onclick = () => {
+  if (typeof XLSX === 'undefined') return toast('Excel aracı yüklenemedi, internet bağlantınızı kontrol edin');
+  if (!S.students.length) return toast('Önce öğrenci ekleyin');
+  const aoa = [['Sıra', 'No', 'Ad Soyad', ...S.cols.map(c => c.name), 'Ortalama', 'Puan']];
+  ordered().forEach((st, i) => {
+    const a = avgOf(st), b = OA.band(a);
+    aoa.push([i + 1, st.no, st.name, ...S.cols.map(c => num(st.g[c.id]) ?? ''), a == null ? '' : +a.toFixed(2), b ? `${b.n} - ${b.label}` : '']);
+  });
+  aoa.push([], ['', '', 'Sınıf ortalaması', ...S.cols.map(c => { const v = colAvg(c); return v == null ? '' : +v.toFixed(2); })]);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch: 5 }, { wch: 8 }, { wch: 26 }, ...S.cols.map(() => ({ wch: 13 })), { wch: 10 }, { wch: 12 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Notlar');
+  const name = [S.sinif, S.ders].filter(Boolean).join('-').replace(/[\\/:*?"<>|\s]+/g, '-') || 'not-cizelgesi';
+  XLSX.writeFile(wb, `${name}.xlsx`);
+};
+$('#btnReset').onclick = () => {
+  if (!confirm('Tüm öğrenciler ve notlar silinsin mi? Bu işlem geri alınamaz.')) return;
+  S.students = []; S.cols = defCols(); normalizeCols(); save(); renderEdit();
+};
+
+// ---------- Yazdırma tasarımı ----------
+const ACCENTS = ['#ea580c', '#e11d48', '#4f46e5', '#2563eb', '#0d9488', '#16a34a', '#7c3aed', '#334155'];
+const chk = (key, label, src = 'p') => `<label><input type="checkbox" data-${src}="${key}" ${(src === 'pc' ? S.P.cols[key] : S.P[key]) ? 'checked' : ''}> ${label}</label>`;
+const seg = (key, opts) => `<div class="seg" data-pseg="${key}">${opts.map(([v, l]) => `<button data-v="${v}" class="${String(S.P[key]) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+
+function renderPrintSettings() {
+  const P = S.P;
+  $('#pset').innerHTML = `
+    <div class="psec"><h3>📄 Başlık</h3><div class="stack">
+      <label class="field">Okul adı<input class="input" data-p="okul" value="${esc(P.okul)}" placeholder="ör. Atatürk Anadolu Lisesi"></label>
+      <label class="field">Başlık<input class="input" data-p="title" value="${esc(P.title)}" placeholder="${esc(autoTitle())}"></label>
+      <label class="field">Eğitim-öğretim yılı<input class="input" data-p="yil" value="${esc(P.yil)}"></label>
+      <div class="checks">${chk('showOkul', 'Okul adı')}${chk('showMeta', 'Sınıf / ders / öğretmen')}${chk('showTarih', 'Tarih')}</div>
+    </div></div>
+    <div class="psec"><h3>🧾 Tabloda görünecek sütunlar</h3>
+      <div class="checks">${chk('ix', 'Sıra', 'pc')}${chk('no', 'Okul no', 'pc')}${chk('sinav', 'Yazılılar', 'pc')}${chk('perf', 'Performanslar', 'pc')}${chk('proje', 'Proje', 'pc')}${chk('avg', 'Ortalama', 'pc')}${chk('puan', 'Puan (1–5)', 'pc')}${chk('durum', 'Geçti / Kaldı', 'pc')}</div>
+      <div class="checks" style="margin-top:8px">${chk('groupRow', 'Grup başlıkları')}${chk('classAvgRow', 'Sınıf ortalaması satırı')}</div>
+    </div>
+    <div class="psec"><h3>➕ Ek bölümler</h3><div class="stack">
+      <div class="checks">${chk('stats', 'İstatistik özeti')}${chk('dist', 'Not dağılımı grafiği')}${chk('sign', 'İmza alanı')}</div>
+      <label class="field">Okul müdürü (imza için)<input class="input" data-p="mudur" value="${esc(P.mudur)}" placeholder="ör. Mehmet Demir"></label>
+      <label class="field">Açıklama / not<textarea class="input" data-p="note" rows="2" placeholder="Kâğıdın altına eklenecek not (isteğe bağlı)">${esc(P.note)}</textarea></label>
+    </div></div>
+    <div class="psec"><h3>🎨 Görünüm</h3><div class="stack">
+      <div class="field">Renk<div class="accents">${ACCENTS.map(a => `<button data-acc="${a}" class="${P.accent === a ? 'on' : ''}" style="background:${a}" aria-label="Renk"></button>`).join('')}<input type="color" data-p="accent" value="${P.accent}" title="Kendi rengini seç"></div></div>
+      <div class="checks">${chk('color', 'Renkli baskı')}${chk('highlight', '50 altını vurgula')}${chk('zebra', 'Satırları renklendir')}</div>
+      <div class="field">Yazı tipi${seg('font', [['modern', 'Modern'], ['resmi', 'Resmî (Times)']])}</div>
+      <div class="field">Yazı boyutu${seg('fontSize', [['s', 'Küçük'], ['m', 'Orta'], ['l', 'Büyük']])}</div>
+      <div class="field">Satır aralığı${seg('density', [['tight', 'Sıkı'], ['normal', 'Normal'], ['wide', 'Geniş']])}</div>
+      <div class="field">Ondalık basamak${seg('decimals', [[0, '0'], [1, '1'], [2, '2']])}</div>
+      <div class="field">Boş notlar${seg('emptyMark', [['—', '— çizgi'], ['', 'Boş bırak']])}</div>
+    </div></div>
+    <div class="psec"><h3>📐 Sayfa</h3>
+      <div class="field">Yön${seg('orient', [['portrait', '▯ Dikey'], ['landscape', '▭ Yatay']])}</div>
+      <button class="btn sm" style="margin-top:12px" id="btnPDefault">↺ Varsayılan tasarıma dön</button>
+    </div>`;
+}
+
+const autoTitle = () => [S.ders, 'Not Çizelgesi'].filter(Boolean).join(' ');
+const pfmt = v => v == null ? S.P.emptyMark : (+v.toFixed(+S.P.decimals)).toLocaleString('tr-TR');
+
+function sheetHTML() {
+  const P = S.P, C = P.cols;
+  const cls = ['sheet', P.orient === 'landscape' && 'land', P.font === 'resmi' && 'font-resmi', 'fs-' + P.fontSize, 'dn-' + P.density,
+    !P.color && 'bw', P.zebra && 'zebra', P.highlight && 'hl'].filter(Boolean).join(' ');
+  const meta = [S.sinif && ['Sınıf', S.sinif], S.ders && ['Ders', S.ders], S.ogretmen && ['Öğretmen', S.ogretmen], ['Dönem', `${P.yil} ${S.donem}`]].filter(Boolean);
+  const head = `
+    <div class="sh-head">
+      ${P.showOkul && P.okul ? `<div class="sh-okul">${esc(P.okul)}</div>` : ''}
+      <h1>${esc(P.title || autoTitle())}</h1>
+      ${P.showMeta || P.showTarih ? `<div class="sh-meta">${P.showMeta ? meta.map(([k, v]) => `<span>${k}: <b>${esc(v)}</b></span>`).join('') : ''}
+        ${P.showTarih ? `<span>Tarih: <b>${new Date().toLocaleDateString('tr-TR')}</b></span>` : ''}</div>` : ''}
+    </div>`;
+  if (!S.students.length) return `<div class="${cls}" style="--acc:${P.accent}">${head}<div class="sh-empty">Henüz öğrenci eklenmedi.</div></div>`;
+
+  const cols = S.cols.filter(c => C[c.type]);
+  const groups = ORDER.filter(t => C[t]).map(t => [t, cols.filter(c => c.type === t).length]).filter(([, k]) => k);
+  const lead = [C.ix && 'Sıra', C.no && 'No', 'Ad Soyad'].filter(Boolean);
+  const tail = [C.avg && 'Ortalama', C.puan && 'Puan', C.durum && 'Durum'].filter(Boolean);
+  const failCls = v => num(v) != null && num(v) < 50 ? 'fail' : '';
+  const rows = ordered().map((st, i) => {
+    const a = avgOf(st), b = OA.band(a);
+    return `<tr>
+      ${C.ix ? `<td>${i + 1}</td>` : ''}${C.no ? `<td>${esc(st.no)}</td>` : ''}<td class="name">${esc(st.name)}</td>
+      ${cols.map(c => `<td class="${failCls(st.g[c.id])}">${pfmt(num(st.g[c.id]))}</td>`).join('')}
+      ${C.avg ? `<td class="avg ${a != null && a < 50 ? 'fail' : ''}">${pfmt(a)}</td>` : ''}
+      ${C.puan ? `<td>${b ? `${b.n} (${b.label})` : P.emptyMark}</td>` : ''}
+      ${C.durum ? `<td>${a == null ? P.emptyMark : a >= 50 ? 'Geçti' : 'Kaldı'}</td>` : ''}
+    </tr>`;
+  }).join('');
+  const allAvg = summary().cls;
+  const s = summary();
+  return `
+  <div class="${cls}" style="--acc:${P.accent}">
+    ${head}
+    <table class="sh-tbl">
+      <thead>
+        ${P.groupRow && groups.length ? `<tr class="grp"><th colspan="${lead.length}"></th>${groups.map(([t, k]) => `<th colspan="${k}">${TYPES[t].group}</th>`).join('')}${tail.length ? `<th colspan="${tail.length}"></th>` : ''}</tr>` : ''}
+        <tr>${lead.map(h => `<th>${h}</th>`).join('')}${cols.map(c => `<th>${esc(c.name)}</th>`).join('')}${tail.map(h => `<th>${h}</th>`).join('')}</tr>
+      </thead>
+      <tbody>${rows}</tbody>
+      ${P.classAvgRow ? `<tfoot><tr><td colspan="${lead.length}" style="text-align:right">Sınıf ortalaması</td>${cols.map(c => `<td>${pfmt(colAvg(c))}</td>`).join('')}
+        ${C.avg ? `<td>${pfmt(allAvg)}</td>` : ''}${C.puan ? '<td></td>' : ''}${C.durum ? '<td></td>' : ''}</tr></tfoot>` : ''}
+    </table>
+    ${P.stats ? `<div class="sh-stats">
+      <div><small>Öğrenci sayısı</small><b>${S.students.length}</b></div>
+      <div><small>Sınıf ortalaması</small><b>${pfmt(s.cls)}</b></div>
+      <div><small>En yüksek</small><b>${pfmt(s.max)}</b></div>
+      <div><small>En düşük</small><b>${pfmt(s.min)}</b></div>
+      <div><small>Geçen / Kalan</small><b>${s.pass} / ${s.avgs.length - s.pass}</b></div>
+    </div>` : ''}
+    ${P.dist ? `<div class="sh-dist"><h4>Not dağılımı</h4>${s.bands.map((c, i) => `
+      <div class="row2"><span>${i + 1} · ${['Geçmez', 'Geçer', 'Orta', 'İyi', 'Pekiyi'][i]}</span><span class="track"><i style="width:${s.avgs.length ? c / s.avgs.length * 100 : 0}%"></i></span><span>${c} kişi</span></div>`).join('')}</div>` : ''}
+    ${P.note ? `<div class="sh-note"><h4>Açıklama</h4>${esc(P.note)}</div>` : ''}
+    ${P.sign ? `<div class="sh-signs">
+      <div><div class="line"></div>${esc(S.ogretmen) || '&nbsp;'}<small>${esc(S.ders) ? esc(S.ders) + ' ' : ''}Öğretmeni</small></div>
+      <div><div class="line"></div>${esc(P.mudur) || '&nbsp;'}<small>Okul Müdürü</small></div>
+    </div>` : ''}
+  </div>`;
+}
+
+function renderSheet() {
+  const html = sheetHTML();
+  $('#printHolder').innerHTML = html;
+  $('#pageSize').textContent = `@page{size:A4 ${S.P.orient};margin:12mm}`;
+  if (S.mode === 'print') { $('#scaler').innerHTML = html; fit(); }
+}
+// Önizlemeyi panele sığacak şekilde küçültür
+function fit() {
+  const stage = $('#stage'), sc = $('#scaler'), sh = sc.firstElementChild; if (!sh) return;
+  sc.style.transform = 'none'; sc.style.width = sc.style.height = '';
+  const k = Math.min(1, (stage.clientWidth - 36) / sh.offsetWidth);
+  sc.style.transform = `scale(${k})`;
+  sc.style.width = sh.offsetWidth * k + 'px'; sc.style.height = sh.offsetHeight * k + 'px';
+}
+new ResizeObserver(() => S.mode === 'print' && fit()).observe($('#stage'));
+
+$('#pset').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.p) S.P[t.dataset.p] = t.type === 'checkbox' ? t.checked : t.value;
+  else if (t.dataset.pc) S.P.cols[t.dataset.pc] = t.checked;
+  else return;
+  save(); renderSheet();
+  if (t.dataset.p === 'accent') document.querySelectorAll('[data-acc]').forEach(b => b.classList.toggle('on', b.dataset.acc === S.P.accent));
+});
+$('#pset').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.acc) S.P.accent = b.dataset.acc;
+  else if (b.dataset.v != null && b.parentElement.dataset.pseg) S.P[b.parentElement.dataset.pseg] = b.dataset.v;
+  else if (b.id === 'btnPDefault') { if (!confirm('Yazdırma ayarları varsayılana dönsün mü?')) return; S.P = { ...DEF_P, okul: S.P.okul, mudur: S.P.mudur, cols: { ...DEF_P.cols } }; }
+  else return;
+  save(); renderPrintSettings(); renderSheet();
+});
+
+// ---------- Mod ----------
+function renderEdit() {
+  $('#sort').value = S.sort;
+  normalizeCols(); renderCounters(); renderGrid(); renderStats(); renderSheet();
+}
+function renderMode() {
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $('#editView').style.display = S.mode === 'edit' ? '' : 'none';
+  $('#printView').style.display = S.mode === 'print' ? '' : 'none';
+  if (S.mode === 'print') renderPrintSettings();
+  renderSheet();
+}
+$('#modeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.mode = b.dataset.mode; save(); renderMode(); } });
+$('#btnPrint').onclick = () => { renderSheet(); window.print(); };
+
+document.querySelectorAll('[data-s]').forEach(el => { el.value = S[el.dataset.s] ?? ''; });
+renderEdit(); renderMode();
+</script>
+</body>
+</html>

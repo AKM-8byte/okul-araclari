@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ders Programı · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .bar .seg button{padding:8px 14px;font-size:14.5px}
+  .status{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;border-radius:14px;background:var(--surface);border:1.5px solid var(--line);font-weight:800}
+  .status .meter{flex:1;min-width:120px;height:10px;border-radius:5px;background:var(--line-2);overflow:hidden}
+  .status .meter i{display:block;height:100%;background:var(--ok)}
+
+  .vgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:16px;align-items:start}
+  .rows{display:flex;flex-direction:column;gap:6px}
+  .r-sub{display:grid;grid-template-columns:30px 1fr 70px 1fr 26px;gap:6px;align-items:center}
+  .r-tch{display:grid;grid-template-columns:1fr 1fr auto 26px;gap:6px;align-items:center}
+  .r-load{display:grid;grid-template-columns:1.4fr 60px 1.4fr auto 26px;gap:6px;align-items:center}
+  .rows .input{padding:6px 8px}
+  .rows input[type=color]{width:30px;height:30px;border:none;padding:0;background:none;cursor:pointer}
+  .hdr{display:grid;gap:6px;font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:4px}
+  .cap{font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+  .cap.bad{color:var(--bad)}
+  .warns{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+  .warns li{padding:8px 10px;border-radius:10px;font-weight:700;font-size:13.5px;background:var(--warn-soft);color:var(--warn)}
+  .warns li.bad{background:var(--bad-soft);color:var(--bad)}
+  .warns li.ok{background:var(--ok-soft);color:var(--ok)}
+  .times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tlist{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .trow{display:grid;grid-template-columns:62px 1fr 12px 1fr 26px;gap:6px;align-items:center}
+  .trow b{font-size:13px;font-weight:900}
+  .trow .input{padding:5px 8px}
+  .trow.ov .input{border-color:var(--brand);background:var(--brand-soft)}
+  .trow .x[hidden]{visibility:hidden;display:block}
+  .tgap{font-size:11.5px;color:var(--muted);font-weight:800;padding:1px 0 1px 68px}
+  .tgap.neg{color:var(--bad)}
+
+  .split{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  .split > *{min-width:0}
+  .picker{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .picker select{max-width:280px}
+  table.tt{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+  .tt th{font-size:12.5px;font-weight:900;color:var(--muted);padding:4px 2px}
+  .tt th.per{width:84px;text-align:left}
+  .tt th.per b{display:block;color:var(--text);font-size:13.5px}
+  .tt th.per small{font-weight:700}
+  .tt td{height:56px;border-radius:10px;background:var(--surface-2);text-align:center;padding:3px 4px;border:1.5px solid var(--line-2);border-left:5px solid var(--line-2);font-size:12px;cursor:pointer;overflow:hidden}
+  .tt td:hover{border-color:var(--brand)}
+  .tt td.f{background:color-mix(in srgb,var(--lc) 18%,var(--surface));border-left-color:var(--lc)}
+  .tt td b{display:block;font-size:13px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tt td small{display:block;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tt td.off{background:repeating-linear-gradient(45deg,var(--line-2) 0 5px,transparent 5px 10px);cursor:default}
+  .tt td.ro{cursor:default}
+  .tt tr.lunch td{height:auto;background:none;border:none;color:var(--muted);font-weight:800;font-size:11.5px;cursor:default}
+  .side-list{display:flex;flex-direction:column;gap:5px}
+  .side-list div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 9px;border-radius:10px;background:var(--surface-2);border-left:5px solid var(--lc);font-weight:800;font-size:13px}
+  .side-list small{color:var(--muted);font-weight:700}
+  .free{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+
+  .carsaf-wrap{overflow:auto;max-height:72vh;border:1.5px solid var(--line-2);border-radius:14px}
+  table.cs{border-collapse:separate;border-spacing:0;font-size:11px}
+  .cs th,.cs td{border-bottom:1px solid var(--line-2);border-right:1px solid var(--line-2);padding:3px 4px;text-align:center;white-space:nowrap}
+  .cs thead th{position:sticky;top:0;background:var(--surface);z-index:2;font-weight:900}
+  .cs thead tr:nth-child(2) th{top:24px}
+  .cs th.rh{position:sticky;left:0;background:var(--surface);z-index:1;text-align:left;font-weight:900;font-size:12px}
+  .cs thead th.rh{z-index:3}
+  .cs td{min-width:46px;height:34px}
+  .cs td.f{background:color-mix(in srgb,var(--lc) 22%,var(--surface))}
+  .cs td b{display:block;font-size:11px}
+  .cs td small{display:block;color:var(--muted);font-size:9.5px}
+  .cs .dsep{border-left:3px solid var(--line)}
+  .cs td.off{background:repeating-linear-gradient(45deg,var(--line-2) 0 4px,transparent 4px 8px)}
+
+  .avail{border-collapse:separate;border-spacing:4px;margin:6px auto}
+  .avail th{font-size:12px;color:var(--muted);font-weight:900;cursor:pointer;padding:2px 6px}
+  .avail td{width:56px;height:32px;border-radius:8px;background:var(--ok-soft);color:var(--ok);font-weight:900;text-align:center;cursor:pointer;font-size:12px}
+  .avail td.off{background:var(--bad-soft);color:var(--bad)}
+  .pick-list{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+  .pick-list button{justify-content:space-between;width:100%;border-left:6px solid var(--lc)}
+  .pick-list button small{color:var(--muted);font-weight:700}
+  .empty-state{text-align:center;padding:46px 16px;color:var(--muted);font-weight:700}
+  .empty-state .big{font-size:46px}
+  @media (max-width:1000px){.split{grid-template-columns:1fr}}
+  /* Telefonda tablo okunur genişlikte kalır, panel içinde yana kayar */
+  .split > .panel{overflow-x:auto}
+  @media (max-width:700px){table.tt{min-width:640px}}
+
+  /* Kâğıt */
+  .p-head{text-align:center;margin-bottom:10px}
+  .p-head .o{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#555;font-size:12px}
+  .p-head h1{margin:2px 0;font-size:21px}
+  .p-tt{width:100%;border-collapse:collapse;table-layout:fixed}
+  .p-tt th,.p-tt td{border:1px solid #999;padding:4px 3px;text-align:center;font-size:12px}
+  .p-tt th{background:#f1f1f1}
+  .p-tt td{height:44px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .p-tt td b{display:block;font-size:12.5px}
+  .p-tt td small{display:block;font-size:10.5px;color:#444}
+  .p-tt .per{width:76px}
+  .p-tt tr.lunch td{height:auto;font-size:10.5px;color:#666;background:#fafafa}
+  .p-cs{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.5px}
+  .p-cs th,.p-cs td{border:1px solid #999;padding:1px;text-align:center;overflow:hidden;white-space:nowrap;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .p-cs th{background:#eee}
+  .p-cs td.rh,.p-cs th.rh{text-align:left;font-weight:800;padding-left:3px}
+  .p-cs .dsep{border-left:2px solid #333}
+  .p-sum{margin-top:8px;font-size:11.5px;display:flex;flex-wrap:wrap;gap:4px 14px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar">
+    <div class="seg" id="tabs">
+      <button data-tab="veri">📥 Veriler</button><button data-tab="sinif">🏫 Sınıf Programı</button><button data-tab="ogretmen">🧑‍🏫 Öğretmen Programı</button><button data-tab="carsaf">🗂️ Çarşaf</button>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn primary" id="btnDist">🔀 Otomatik Dağıt</button>
+    <button class="btn" id="btnPrint">🖨️ Yazdır</button>
+  </div>
+  <div class="status" id="status"></div>
+  <div id="view"></div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🗓️', title: 'Ders Programı (Okul Geneli)',
+  help: {
+    key: 'ders-dagitim', emoji: '🗓️', title: 'Bu bir okul ders programı hazırlama aracıdır',
+    intro: 'Tüm sınıfların haftalık programını öğretmen çakışması olmadan otomatik hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '📥', title: 'Verileri girin', text: 'Veriler sekmesinde dersleri, öğretmenleri (branşlarıyla) ve her sınıfın ders yükünü (hangi ders, kaç saat, hangi öğretmen) girin. Sınıflar Sınıflarım\'dan gelir.' },
+      { icon: '👥', title: 'Aynı branşta birden çok öğretmen', text: 'Ders yükünde öğretmeni "Otomatik (branştan)" bırakırsanız araç o branşın öğretmenleri arasında yükü dengeleyerek seçer. İsterseniz öğretmeni elle de seçebilirsiniz.' },
+      { icon: '📅', title: 'Müsaitlikleri işaretleyin', text: 'Öğretmenin "Müsaitlik" düğmesinden ders veremeyeceği gün ve saatleri kapatın (ör. boş gün).' },
+      { icon: '🔀', title: '"Otomatik Dağıt"a basın', text: 'Öğretmen ve sınıf çakışması olmadan, aynı dersi haftaya yayarak program oluşturulur. Yerleşemeyen ders kalırsa nedeni gösterilir.' },
+      { icon: '👀', title: 'Programları inceleyin', text: 'Sınıf, Öğretmen ve Çarşaf sekmelerinden bakın; sınıf programında bir kutuya tıklayarak dersi elle değiştirin. Hepsini toplu yazdırabilirsiniz.' },
+      { icon: '💾', title: 'Örnek okulla deneyin', text: 'Size verilen örnek okul yedek dosyasını sağ üstteki 💾 → Geri yükle ile yükleyip her şeyi deneyebilirsiniz.' }
+    ]
+  }
+});
+
+const KEY = 'oa.dersDagitim';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const DS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#14b8a6', '#f97316', '#ec4899', '#84cc16', '#0ea5e9', '#94a3b8', '#a855f7', '#eab308', '#22c55e'];
+let S = {
+  okul: '', days: 5, periods: 7, start: '08:30', dur: 40, brk: 10, lunchAfter: 4, lunch: 45,
+  maxSame: 2, tMaxDaily: 0,
+  subjects: [], teachers: [], classIds: [], load: [], auto: {}, sched: {},
+  tab: 'veri', cls: '', tch: '', csMode: 'sinif', freeD: 0, freeP: 0,
+  ...OA.store.get(KEY, {})
+};
+if (S.brk1 == null) S.brk1 = S.brk;
+if (!S.timeOv || typeof S.timeOv !== 'object') S.timeOv = {};
+const save = () => OA.store.set(KEY, S);
+
+// ---------- Yardımcılar ----------
+const classes = () => S.classIds.map(id => OA.classes.get(id)).filter(Boolean);
+const cName = id => OA.classes.get(id)?.name || '?';
+const sub = id => S.subjects.find(x => x.id === id);
+const tch = id => S.teachers.find(x => x.id === id);
+const ld = id => S.load.find(x => x.id === id);
+const teacherOf = l => l && (l.teacherId || S.auto[l.id] || null);
+const shortName = n => { const w = String(n || '').trim().split(/\s+/); return w.length > 1 ? `${w[0][0]}. ${w[w.length - 1]}` : (w[0] || ''); };
+const slotsN = () => S.days * S.periods;
+const key = (d, p) => `${d}-${p}`;
+const isOff = (t, d, p) => !!t?.off?.[key(d, p)];
+const availOf = t => slotsN() - Object.keys(t.off || {}).filter(k => { const [d, p] = k.split('-').map(Number); return d < S.days && p < S.periods; }).length;
+const toMin = v => { if (!v) return null; const [h, m] = String(v).split(':').map(Number); return isNaN(h) ? null : h * 60 + (m || 0); };
+const hm = x => `${String(Math.floor(x / 60) % 24).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}`;
+// Ders saatleri: ayarlardan hesaplanır; elle değiştirilen saat varsa o kullanılır ve sonraki dersler ona göre kayar
+function slots() {
+  let t = toMin(S.start) ?? 510;
+  const out = [];
+  for (let p = 0; p < S.periods; p++) {
+    const o = S.timeOv[p] || {};
+    const a = toMin(o.a) ?? t, b = toMin(o.b) ?? a + +S.dur;
+    out.push({ a, b, ov: o.a != null || o.b != null });
+    t = b + (p + 1 === +S.lunchAfter ? +S.lunch : p === 0 ? +S.brk1 : +S.brk);
+  }
+  return out;
+}
+const times = () => slots().map(x => `${hm(x.a)}–${hm(x.b)}`);
+// p. dersten sonraki aranın süresi (dk)
+const gapAfter = p => { const sl = slots(); return p + 1 < sl.length ? sl[p + 1].a - sl[p].b : 0; };
+function renderTimes() {
+  const el = document.getElementById('timeList'); if (!el) return;
+  const sl = slots(), active = document.activeElement;
+  const gapTxt = p => { const g = sl[p + 1].a - sl[p].b; return `${p + 1 === +S.lunchAfter ? '🍽️ Öğle arası' : p === 0 ? 'İlk teneffüs' : 'Teneffüs'} · ${g < 0 ? 'dersler çakışıyor!' : g + ' dk'}`; };
+  if (el.contains(active) && el.querySelectorAll('.trow').length === sl.length) {
+    // Yazılan kutu bozulmasın diye yalnızca diğer kutular ve ara süreleri güncellenir
+    sl.forEach((x, p) => {
+      const row = el.querySelector(`.trow[data-p="${p}"]`);
+      row.classList.toggle('ov', x.ov); row.querySelector('.x').hidden = !x.ov;
+      for (const inp of row.querySelectorAll('input')) if (inp !== active) inp.value = hm(inp.dataset.te === 'a' ? x.a : x.b);
+      const g = el.querySelector(`.tgap[data-g="${p}"]`);
+      if (g) { g.textContent = gapTxt(p); g.classList.toggle('neg', sl[p + 1].a < x.b); }
+    });
+    return;
+  }
+  el.innerHTML = sl.map((x, p) => `
+    <div class="trow ${x.ov ? 'ov' : ''}" data-p="${p}"><b>${p + 1}. ders</b>
+      <input class="input" type="time" data-tp="${p}" data-te="a" value="${hm(x.a)}" aria-label="${p + 1}. ders başlangıç">
+      <span>–</span>
+      <input class="input" type="time" data-tp="${p}" data-te="b" value="${hm(x.b)}" aria-label="${p + 1}. ders bitiş">
+      <button class="x" data-treset="${p}" title="Bu dersi otomatik saate döndür" ${x.ov ? '' : 'hidden'}>↺</button></div>
+    ${p + 1 < sl.length ? `<div class="tgap ${sl[p + 1].a < x.b ? 'neg' : ''}" data-g="${p}">${gapTxt(p)}</div>` : ''}`).join('');
+}
+// Bir öğretmenin o saatte hangi sınıfta olduğu
+function teacherAt(tid, d, p) {
+  for (const cid of S.classIds) { const l = ld(S.sched[cid]?.[key(d, p)]); if (l && teacherOf(l) === tid) return { cid, l }; }
+  return null;
+}
+const placedCount = l => Object.values(S.sched[l.classId] || {}).filter(x => x === l.id).length;
+
+// ---------- Otomatik öğretmen seçimi (aynı branşta birden çok öğretmen) ----------
+function resolveAuto() {
+  S.auto = {};
+  const hours = {};
+  for (const l of S.load) if (l.teacherId) hours[l.teacherId] = (hours[l.teacherId] || 0) + +l.hours;
+  const autos = S.load.filter(l => !l.teacherId && sub(l.subjectId)).sort((a, b) => b.hours - a.hours);
+  for (const l of autos) {
+    const br = sub(l.subjectId).branch || sub(l.subjectId).name;
+    const cands = S.teachers.filter(t => t.branch === br);
+    if (!cands.length) continue;
+    // Yükü en az olan; aynı sınıfta zaten bu branştan ders veren öğretmen tercih edilir (Türkçe + Okuma Becerileri gibi)
+    const score = t => (hours[t.id] || 0) / Math.max(1, availOf(t)) - (S.load.some(o => o.classId === l.classId && (o.teacherId || S.auto[o.id]) === t.id) ? .35 : 0);
+    const best = cands.sort((a, b) => score(a) - score(b))[0];
+    S.auto[l.id] = best.id; hours[best.id] = (hours[best.id] || 0) + +l.hours;
+  }
+}
+
+// ---------- Otomatik dağıtım ----------
+function schedule() {
+  resolveAuto();
+  const D = S.days, P = S.periods, crossesLunch = p => +S.lunchAfter > 0 && p === +S.lunchAfter - 1;
+  const units = [];
+  for (const l of S.load) {
+    const t = teacherOf(l), h = Math.max(0, +l.hours || 0);
+    if (!sub(l.subjectId) || !OA.classes.get(l.classId)) continue;
+    let rest = h;
+    if (l.block) while (rest >= 2) { units.push({ l, t, len: 2 }); rest -= 2; }
+    while (rest-- > 0) units.push({ l, t, len: 1 });
+  }
+  const tFree = t => t ? availOf(tch(t)) : slotsN();
+  let best = null;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const cls = {}, tb = {}, subDay = {}, tDay = {};
+    const C = c => cls[c] = cls[c] || {};
+    const T = t => tb[t] = tb[t] || {};
+    const order = units.map(u => ({ u, r: Math.random() }))
+      .sort((a, b) => b.u.len - a.u.len || tFree(a.u.t) - tFree(b.u.t) || a.r - b.r).map(x => x.u);
+    const ok = (u, d, p, ign) => {
+      for (let k = 0; k < u.len; k++) {
+        const pp = p + k; if (pp >= P) return false;
+        const cOcc = C(u.l.classId)[key(d, pp)]; if (cOcc && cOcc !== ign) return false;
+        if (u.t) { const tOcc = T(u.t)[key(d, pp)]; if (tOcc && tOcc !== ign) return false; if (isOff(tch(u.t), d, pp)) return false; }
+      }
+      if (u.len === 2 && crossesLunch(p)) return false;
+      const sd = (subDay[u.l.classId + u.l.subjectId] || {})[d] || 0;
+      if (sd + u.len > +S.maxSame && !(ign && ign.l.subjectId === u.l.subjectId)) return false;
+      if (u.t && +S.tMaxDaily && ((tDay[u.t] || {})[d] || 0) + u.len > +S.tMaxDaily) return false;
+      return true;
+    };
+    const put = (u, d, p, sign) => {
+      for (let k = 0; k < u.len; k++) {
+        if (sign > 0) { C(u.l.classId)[key(d, p + k)] = u; if (u.t) T(u.t)[key(d, p + k)] = u; }
+        else { delete C(u.l.classId)[key(d, p + k)]; if (u.t) delete T(u.t)[key(d, p + k)]; }
+      }
+      const sk = u.l.classId + u.l.subjectId; subDay[sk] = subDay[sk] || {}; subDay[sk][d] = (subDay[sk][d] || 0) + sign * u.len;
+      if (u.t) { tDay[u.t] = tDay[u.t] || {}; tDay[u.t][d] = (tDay[u.t][d] || 0) + sign * u.len; }
+      u.at = sign > 0 ? [d, p] : null;
+    };
+    // Aynı ders aynı güne yığılmasın; sınıfın günü baştan itibaren dolsun (önceki saat boşsa ceza)
+    const cost = (u, d, p) => ((subDay[u.l.classId + u.l.subjectId] || {})[d] || 0) * 10 + (u.t ? ((tDay[u.t] || {})[d] || 0) * .6 : 0)
+      + (p > 0 && !C(u.l.classId)[key(d, p - 1)] ? 2.5 : 0) + p * .25 + Math.random() * 2;
+    const unplaced = [];
+    for (const u0 of order) {
+      const u = { ...u0 };
+      let bestPos = null, bc = Infinity;
+      for (let d = 0; d < D; d++) for (let p = 0; p < P; p++) if (ok(u, d, p)) { const c = cost(u, d, p); if (c < bc) { bc = c; bestPos = [d, p]; } }
+      if (bestPos) { put(u, ...bestPos, 1); continue; }
+      // Yer yoksa: tek saatlik bir dersi başka yere kaydırıp yer açmayı dene
+      let done = false;
+      for (let d = 0; d < D && !done; d++) for (let p = 0; p < P && !done; p++) {
+        const blockers = new Set();
+        for (let k = 0; k < u.len; k++) { const a = C(u.l.classId)[key(d, p + k)], b = u.t && T(u.t)[key(d, p + k)]; if (a) blockers.add(a); if (b) blockers.add(b); }
+        if (blockers.size !== 1) continue;
+        const v = [...blockers][0], [vd, vp] = v.at;
+        put(v, vd, vp, -1);
+        if (!ok(u, d, p)) { put(v, vd, vp, 1); continue; }
+        put(u, d, p, 1);
+        let moved = false;
+        for (let d2 = 0; d2 < D && !moved; d2++) for (let p2 = 0; p2 < P && !moved; p2++) if (!(d2 === vd && p2 === vp) && ok(v, d2, p2)) { put(v, d2, p2, 1); moved = true; }
+        if (moved) done = true; else { put(u, d, p, -1); put(v, vd, vp, 1); }
+      }
+      if (!done) unplaced.push(u);
+    }
+    // Sınıf günlerindeki ara boşlukları kapat: boş saat yalnızca gün sonunda kalabilir
+    const lastOf = (c, d) => { for (let p = P - 1; p >= 0; p--) if (C(c)[key(d, p)]) return p; return -1; };
+    const fillHole = () => {
+      for (const c of Object.keys(cls)) for (let d = 0; d < D; d++) {
+        const last = lastOf(c, d);
+        for (let p = 0; p < last; p++) {
+          if (C(c)[key(d, p)]) continue;
+          // Aday: sınıfın herhangi bir günün en sonundaki tek saatlik dersi (oradan alınınca yeni boşluk açılmaz)
+          const cands = [];
+          for (let d2 = 0; d2 < D; d2++) {
+            const q = lastOf(c, d2); if (q < 0 || (d2 === d && q <= p)) continue;
+            const v = C(c)[key(d2, q)]; if (v.len === 1) cands.push(v);
+          }
+          cands.sort((a, b) => (b.at[0] === d) - (a.at[0] === d) || lastOf(c, b.at[0]) - lastOf(c, a.at[0]));
+          for (const v of cands) {
+            const [vd, vp] = v.at; put(v, vd, vp, -1);
+            if (ok(v, d, p)) { put(v, d, p, 1); return true; }
+            put(v, vd, vp, 1);
+          }
+        }
+      }
+      return false;
+    };
+    for (let guard = 0; guard < 500 && fillHole(); guard++);
+    const gaps = Object.keys(cls).reduce((n, c) => { for (let d = 0; d < D; d++) { const last = lastOf(c, d); for (let p = 0; p < last; p++) if (!C(c)[key(d, p)]) n++; } return n; }, 0);
+    const missing = unplaced.reduce((n, u) => n + u.len, 0);
+    if (!best || missing * 100 + gaps < best.missing * 100 + best.gaps) {
+      const sched = {};
+      for (const [cid, m] of Object.entries(cls)) { sched[cid] = {}; for (const [k, u] of Object.entries(m)) sched[cid][k] = u.l.id; }
+      best = { missing, gaps, sched };
+      if (!missing && !gaps) break;
+    }
+  }
+  S.sched = best ? best.sched : {};
+  save();
+  return best ? best.missing : 0;
+}
+
+// Yerleşemeyen derslerin nedeni
+function problems() {
+  const out = [];
+  for (const l of S.load) {
+    const s = sub(l.subjectId); if (!s || !OA.classes.get(l.classId)) continue;
+    const miss = +l.hours - placedCount(l); if (miss <= 0) continue;
+    const t = teacherOf(l), tt = tch(t);
+    let why = 'öğretmen ile sınıfın ortak boş saati kalmadı; elle yerleştirin ya da müsaitliği genişletin';
+    if (!t) why = `"${s.branch || s.name}" branşında öğretmen yok`;
+    else if (S.load.filter(o => teacherOf(o) === t).reduce((n, o) => n + +o.hours, 0) > availOf(tt)) why = `${shortName(tt.name)} için toplam ders saati müsait saatinden fazla`;
+    else if (S.load.filter(o => o.classId === l.classId).reduce((n, o) => n + +o.hours, 0) > slotsN()) why = 'sınıfın haftalık ders toplamı, programdaki saat sayısından fazla';
+    out.push({ l, miss, why });
+  }
+  return out;
+}
+
+// ---------- Durum çubuğu ----------
+function renderStatus() {
+  const total = S.load.filter(l => sub(l.subjectId) && OA.classes.get(l.classId)).reduce((n, l) => n + +l.hours, 0);
+  const placed = S.load.reduce((n, l) => n + Math.min(+l.hours, placedCount(l)), 0);
+  const pr = problems();
+  $('#status').innerHTML = total
+    ? `<span>📊 ${classes().length} sınıf · ${S.teachers.length} öğretmen · ${total} ders saati</span>
+       <span class="meter"><i style="width:${total ? placed / total * 100 : 0}%"></i></span>
+       <span>${placed} / ${total} yerleşti</span>
+       ${!placed ? '<span class="chip">Henüz dağıtılmadı — "Otomatik Dağıt"a basın</span>'
+         : pr.length ? `<button class="btn sm danger" id="btnProb">⚠️ ${pr.reduce((n, x) => n + x.miss, 0)} saat yerleşmedi</button>` : '<span class="chip ok">✔ Tamamı yerleşti</span>'}`
+    : '<span>Başlamak için Veriler sekmesinde ders, öğretmen ve sınıf ders yüklerini girin ya da örnek okul yedeğini yükleyin (💾).</span>';
+  $('#btnProb')?.addEventListener('click', showProblems);
+}
+function showProblems() {
+  const pr = problems();
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">⚠️</div><div><div class="eyebrow">Kontrol</div><h2>Yerleşemeyen dersler</h2></div></div>
+    <ul class="warns">${pr.map(x => `<li class="bad"><b>${esc(cName(x.l.classId))} · ${esc(sub(x.l.subjectId).name)}</b> — ${x.miss} saat: ${esc(x.why)}</li>`).join('')}</ul>
+    <div class="modal-foot" style="margin-top:14px"><span class="small">Sınıf Programı'nda boş kutulara tıklayıp elle yerleştirebilirsiniz.</span><button class="btn primary" data-ok>Tamam</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-ok]').onclick = () => wrap.remove();
+}
+
+// ---------- Veriler sekmesi ----------
+function branches() { return [...new Set([...S.teachers.map(t => t.branch), ...S.subjects.map(s => s.branch)].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr')); }
+function checks() {
+  const out = [];
+  for (const c of classes()) {
+    const h = S.load.filter(l => l.classId === c.id).reduce((n, l) => n + +l.hours, 0);
+    if (h > slotsN()) out.push(['bad', `${c.name}: ${h} saat ders var ama haftada ${slotsN()} saat yer var.`]);
+  }
+  resolveAuto();
+  for (const t of S.teachers) {
+    const h = S.load.filter(l => teacherOf(l) === t.id).reduce((n, l) => n + +l.hours, 0);
+    if (h > availOf(t)) out.push(['bad', `${t.name}: ${h} saat ders, ama yalnızca ${availOf(t)} saat müsait.`]);
+  }
+  for (const l of S.load) if (!teacherOf(l) && sub(l.subjectId)) out.push(['bad', `${cName(l.classId)} · ${sub(l.subjectId).name}: "${sub(l.subjectId).branch}" branşında öğretmen yok.`]);
+  const br = {};
+  for (const l of S.load) { const t = tch(teacherOf(l)); if (t) (br[t.branch] = br[t.branch] || new Set()).add(t.id); }
+  for (const [b, set] of Object.entries(br)) if (set.size > 1) out.push(['ok', `${b}: ${set.size} öğretmen arasında dağıtılıyor (${[...set].map(id => shortName(tch(id).name) + ' ' + S.load.filter(l => teacherOf(l) === id).reduce((n, l) => n + +l.hours, 0) + ' sa').join(', ')}).`]);
+  return out;
+}
+function renderData() {
+  const cls = classes();
+  if (!S.cls || !S.classIds.includes(S.cls)) S.cls = cls[0]?.id || '';
+  const brs = branches();
+  const tOpts = (l) => {
+    const s = sub(l.subjectId), br = s?.branch || s?.name;
+    const same = S.teachers.filter(t => t.branch === br), other = S.teachers.filter(t => t.branch !== br);
+    return `<option value="">🔀 Otomatik (${esc(br || 'branş')})${!l.teacherId && S.auto[l.id] ? ' → ' + esc(shortName(tch(S.auto[l.id])?.name)) : ''}</option>` +
+      (same.length ? `<optgroup label="${esc(br)} öğretmenleri">${same.map(t => `<option value="${t.id}" ${l.teacherId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</optgroup>` : '') +
+      (other.length ? `<optgroup label="Diğer">${other.map(t => `<option value="${t.id}" ${l.teacherId === t.id ? 'selected' : ''}>${esc(t.name)} (${esc(t.branch)})</option>`).join('')}</optgroup>` : '');
+  };
+  const myLoad = S.load.filter(l => l.classId === S.cls);
+  const myH = myLoad.reduce((n, l) => n + +l.hours, 0);
+  const tHours = id => S.load.filter(l => teacherOf(l) === id).reduce((n, l) => n + +l.hours, 0);
+  const warn = checks();
+  $('#view').innerHTML = `
+    <datalist id="brList">${brs.map(b => `<option value="${esc(b)}">`).join('')}</datalist>
+    <div class="vgrid">
+      <div class="panel">
+        <h2><span><span class="h-ic">🏫</span> Sınıfların ders yükü</span><button class="btn sm" id="btnAddCls">+ Sınıf ekle</button></h2>
+        ${cls.length ? `<div class="seg" id="clsSeg" style="margin-bottom:10px">${cls.map(c => `<button data-c="${c.id}" class="${S.cls === c.id ? 'on' : ''}">${esc(c.name)}</button>`).join('')}</div>
+        <div class="hdr" style="grid-template-columns:1.4fr 60px 1.4fr auto 26px"><span>Ders</span><span>Saat</span><span>Öğretmen</span><span>Blok</span><span></span></div>
+        <div class="rows" id="loadRows">${myLoad.map(l => `
+          <div class="r-load" data-id="${l.id}">
+            <select class="input" data-f="subjectId">${S.subjects.map(s => `<option value="${s.id}" ${s.id === l.subjectId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select>
+            <input class="input" type="number" min="1" max="12" value="${l.hours}" data-f="hours">
+            <select class="input" data-f="teacherId">${tOpts(l)}</select>
+            <label class="small" title="2 saatlik dersleri yan yana koy"><input type="checkbox" data-f="block" ${l.block ? 'checked' : ''}> 2'li</label>
+            <button class="x" data-del title="Sil">✕</button>
+          </div>`).join('')}</div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm" id="btnAddLoad">+ Ders ekle</button>
+          <button class="btn sm" id="btnCopyLoad" title="Bu sınıfın ders yükünü başka sınıflara kopyala">📋 Başka sınıfa kopyala</button>
+          <span class="spacer"></span>
+          <span class="cap ${myH > slotsN() ? 'bad' : ''}">Toplam: ${myH} / ${slotsN()} saat</span>
+        </div>
+        <button class="btn sm ghost danger" id="btnRmCls" style="margin-top:6px">Bu sınıfı programdan çıkar</button>`
+        : '<div class="empty-state"><div class="big">🏫</div>Sınıflarım\'dan programa sınıf ekleyin.</div>'}
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">🧑‍🏫</span> Öğretmenler</span><span class="row"><button class="btn sm" id="btnPasteT">📋 Yapıştır</button><button class="btn sm" id="btnAddT">+ Öğretmen</button></span></h2>
+        <div class="hdr" style="grid-template-columns:1fr 1fr auto 26px"><span>Ad Soyad</span><span>Branş</span><span>Müsaitlik / yük</span><span></span></div>
+        <div class="rows" id="tRows">${S.teachers.map(t => `
+          <div class="r-tch" data-id="${t.id}">
+            <input class="input" value="${esc(t.name)}" data-f="name" placeholder="Ad Soyad">
+            <input class="input" value="${esc(t.branch)}" data-f="branch" list="brList" placeholder="Branş">
+            <button class="btn sm" data-avail title="Ders veremeyeceği saatleri işaretle">📅 <span class="cap ${tHours(t.id) > availOf(t) ? 'bad' : ''}">${tHours(t.id)}/${availOf(t)}</span></button>
+            <button class="x" data-del title="Sil">✕</button>
+          </div>`).join('') || '<div class="small">Henüz öğretmen yok.</div>'}</div>
+        <p class="small" style="margin:8px 0 0">📅 düğmesindeki sayı: haftalık ders saati / müsait saat. Aynı branşa birden çok öğretmen yazabilirsiniz.</p>
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">📚</span> Dersler</span><button class="btn sm" id="btnAddS">+ Ders</button></h2>
+        <div class="hdr" style="grid-template-columns:30px 1fr 70px 1fr 26px"><span></span><span>Ders adı</span><span>Kısa</span><span>Branş (öğretmen)</span><span></span></div>
+        <div class="rows" id="sRows">${S.subjects.map(s => `
+          <div class="r-sub" data-id="${s.id}">
+            <input type="color" value="${s.color}" data-f="color">
+            <input class="input" value="${esc(s.name)}" data-f="name">
+            <input class="input" value="${esc(s.short || '')}" data-f="short" maxlength="6">
+            <input class="input" value="${esc(s.branch || '')}" data-f="branch" list="brList">
+            <button class="x" data-del title="Sil">✕</button>
+          </div>`).join('') || '<div class="small">Henüz ders yok.</div>'}</div>
+        <p class="small" style="margin:8px 0 0">"Branş", bu dersi hangi branştaki öğretmenlerin verebileceğini belirler (ör. Okuma Becerileri → Türkçe).</p>
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">⏰</span> Gün, saat ve kurallar</span></h2>
+        <div class="stack">
+          <label class="field">Okul adı<input class="input" data-k="okul"></label>
+          <div class="field">Günler<div class="seg" id="daysSeg"><button data-v="5" class="${S.days == 5 ? 'on' : ''}">Pzt–Cuma</button><button data-v="6" class="${S.days == 6 ? 'on' : ''}">Pzt–Cmt</button></div></div>
+          <div class="times">
+            <label class="field">Günlük ders<input class="input" type="number" min="1" max="12" data-k="periods"></label>
+            <label class="field">İlk ders<input class="input" type="time" data-k="start"></label>
+            <label class="field">Ders (dk)<input class="input" type="number" min="20" max="90" data-k="dur"></label>
+            <label class="field">İlk teneffüs (dk) <span class="small">(1. dersten sonra)</span><input class="input" type="number" min="0" max="45" data-k="brk1"></label>
+            <label class="field">Diğer teneffüsler (dk)<input class="input" type="number" min="0" max="30" data-k="brk"></label>
+            <label class="field">Öğle arası şu dersten sonra<input class="input" type="number" min="0" max="12" data-k="lunchAfter"></label>
+            <label class="field">Öğle arası (dk)<input class="input" type="number" min="0" max="120" data-k="lunch"></label>
+            <label class="field">Bir ders günde en çok<input class="input" type="number" min="1" max="6" data-k="maxSame"></label>
+            <label class="field">Öğretmen günde en çok <span class="small">(0 = sınırsız)</span><input class="input" type="number" min="0" max="12" data-k="tMaxDaily"></label>
+          </div>
+          <div class="field">Ders saatleri <span class="small">(istediğiniz saati elle değiştirin; sonraki dersler ona göre kayar)</span>
+            <div class="tlist" id="timeList"></div>
+            <button class="btn sm" id="btnTimeReset" style="align-self:flex-start;margin-top:6px">↺ Tüm saatleri otomatiğe döndür</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="grid-column:1/-1">
+        <h2><span><span class="h-ic">🔍</span> Kontrol</span></h2>
+        <ul class="warns">${warn.length ? warn.map(([c, t]) => `<li class="${c}">${c === 'ok' ? '👥' : '⚠️'} ${esc(t)}</li>`).join('') : '<li class="ok">✔ Veriler tutarlı görünüyor. "Otomatik Dağıt"a basabilirsiniz.</li>'}</ul>
+      </div>
+    </div>`;
+  document.querySelectorAll('#view [data-k]').forEach(el => el.value = S[el.dataset.k] ?? '');
+  renderTimes();
+}
+
+function bindData() {
+  const v = $('#view');
+  v.oninput = e => {
+    if (S.tab !== 'veri') return;
+    const t = e.target, row = t.closest('[data-id]');
+    if (t.dataset.k) { S[t.dataset.k] = t.type === 'number' ? Math.max(+t.min || 0, Math.min(+t.max || 999, +t.value || 0)) : t.value; save(); renderStatus(); renderTimes(); return; }
+    if (t.dataset.tp != null) {
+      if (!t.value) return;
+      (S.timeOv[t.dataset.tp] ||= {})[t.dataset.te] = t.value;
+      save(); renderTimes(); return;
+    }
+    if (!row || !t.dataset.f) return;
+    const f = t.dataset.f;
+    if (row.classList.contains('r-sub')) sub(row.dataset.id)[f] = t.value;
+    else if (row.classList.contains('r-tch')) tch(row.dataset.id)[f] = t.value;
+    else if (row.classList.contains('r-load')) { const l = ld(row.dataset.id); l[f] = f === 'block' ? t.checked : f === 'hours' ? Math.max(1, +t.value || 1) : t.value; }
+    save(); renderStatus();
+  };
+  v.onchange = e => {
+    if (S.tab !== 'veri') return;
+    // seçimler ve sayılar değişince özet / kontrol yenilensin
+    if (e.target.tagName === 'SELECT' || e.target.type === 'number' || e.target.type === 'checkbox' || e.target.dataset.f === 'branch') { save(); renderData(); renderStatus(); }
+  };
+  v.onclick = async e => {
+    if (S.tab !== 'veri') return;
+    const b = e.target.closest('button'); if (!b) return;
+    const row = b.closest('[data-id]');
+    if (b.dataset.c) { S.cls = b.dataset.c; save(); renderData(); return; }
+    if (b.dataset.v && b.parentElement.id === 'daysSeg') { S.days = +b.dataset.v; save(); renderData(); renderStatus(); return; }
+    if (b.dataset.del != null && row) {
+      if (row.classList.contains('r-sub')) {
+        if (S.load.some(l => l.subjectId === row.dataset.id) && !confirm('Bu ders, sınıfların ders yükünden de silinsin mi?')) return;
+        S.subjects = S.subjects.filter(x => x.id !== row.dataset.id); S.load = S.load.filter(l => l.subjectId !== row.dataset.id);
+      } else if (row.classList.contains('r-tch')) {
+        if (!confirm(`${tch(row.dataset.id).name || 'Bu öğretmen'} silinsin mi? Elle atandığı dersler "Otomatik" olur.`)) return;
+        S.teachers = S.teachers.filter(x => x.id !== row.dataset.id); for (const l of S.load) if (l.teacherId === row.dataset.id) l.teacherId = '';
+      } else if (row.classList.contains('r-load')) S.load = S.load.filter(l => l.id !== row.dataset.id);
+      cleanSched(); save(); renderAll(); return;
+    }
+    if (b.dataset.avail != null) return availDialog(tch(row.dataset.id));
+    if (b.dataset.treset != null) { delete S.timeOv[b.dataset.treset]; save(); renderTimes(); return; }
+    if (b.id === 'btnTimeReset') {
+      if (Object.keys(S.timeOv).length && !confirm('Elle değiştirdiğiniz tüm ders saatleri silinip ayarlara göre yeniden hesaplansın mı?')) return;
+      S.timeOv = {}; save(); renderTimes(); return;
+    }
+    switch (b.id) {
+      case 'btnAddS': S.subjects.push({ id: OA.uid(), name: 'Yeni ders', short: '', branch: '', color: COLORS[S.subjects.length % COLORS.length] }); break;
+      case 'btnAddT': S.teachers.push({ id: OA.uid(), name: '', branch: branches()[0] || '', off: {} }); break;
+      case 'btnAddLoad': if (!S.subjects.length) return OA.toast('Önce ders ekleyin'); S.load.push({ id: OA.uid(), classId: S.cls, subjectId: S.subjects[0].id, hours: 2, teacherId: '', block: false }); break;
+      case 'btnAddCls': {
+        const avail = OA.classes.list().filter(c => !S.classIds.includes(c.id));
+        if (!avail.length) return OA.toast(OA.classes.list().length ? 'Tüm sınıflar zaten programda' : 'Önce Sınıflarım\'da sınıf oluşturun');
+        const c = await OA.pickClass({ title: 'Programa hangi sınıf eklensin?' });
+        if (!c) return; if (!S.classIds.includes(c.id)) S.classIds.push(c.id); S.cls = c.id; break;
+      }
+      case 'btnRmCls': if (!confirm(`${cName(S.cls)} programdan çıkarılsın mı? (Ders yükü de silinir)`)) return; S.load = S.load.filter(l => l.classId !== S.cls); S.classIds = S.classIds.filter(x => x !== S.cls); delete S.sched[S.cls]; S.cls = ''; break;
+      case 'btnCopyLoad': return copyDialog();
+      case 'btnPasteT': return pasteTeachers();
+      default: return;
+    }
+    save(); renderAll();
+  };
+}
+function cleanSched() { for (const cid of Object.keys(S.sched)) for (const [k, id] of Object.entries(S.sched[cid])) if (!ld(id)) delete S.sched[cid][k]; }
+
+function availDialog(t) {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  const draw = () => {
+    wrap.innerHTML = `<div class="modal" style="max-width:640px"><div class="modal-hero"><div class="modal-emoji">📅</div><div><div class="eyebrow">Müsaitlik</div><h2>${esc(t.name || 'Öğretmen')}</h2></div></div>
+      <p class="modal-intro">Ders veremeyeceği saatlere tıklayın (kırmızı). Gün adına tıklayınca o günün tamamı açılır/kapanır.</p>
+      <div style="overflow:auto"><table class="avail"><tr><th></th>${DS.slice(0, S.days).map((d, i) => `<th data-day="${i}">${d}</th>`).join('')}</tr>
+      ${Array.from({ length: S.periods }, (_, p) => `<tr><th>${p + 1}.</th>${Array.from({ length: S.days }, (_, d) => `<td class="${isOff(t, d, p) ? 'off' : ''}" data-d="${d}" data-p="${p}">${isOff(t, d, p) ? '✗' : '✓'}</td>`).join('')}</tr>`).join('')}</table></div>
+      <div class="modal-foot"><span class="small">Müsait: ${availOf(t)} saat</span><button class="btn primary" data-ok>Tamam</button></div></div>`;
+  };
+  draw(); document.body.appendChild(wrap);
+  wrap.onclick = e => {
+    if (e.target.closest('[data-ok]') || e.target === wrap) { wrap.remove(); save(); renderAll(); return; }
+    t.off = t.off || {};
+    const td = e.target.closest('td[data-d]'), th = e.target.closest('th[data-day]');
+    if (td) { const k = key(td.dataset.d, td.dataset.p); t.off[k] ? delete t.off[k] : (t.off[k] = 1); }
+    else if (th) { const d = +th.dataset.day, all = Array.from({ length: S.periods }, (_, p) => isOff(t, d, p)).every(Boolean); for (let p = 0; p < S.periods; p++) all ? delete t.off[key(d, p)] : (t.off[key(d, p)] = 1); }
+    else return;
+    draw();
+  };
+}
+function copyDialog() {
+  const others = classes().filter(c => c.id !== S.cls);
+  if (!others.length) return OA.toast('Kopyalanacak başka sınıf yok');
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">📋</div><div><div class="eyebrow">Kopyala</div><h2>${esc(cName(S.cls))} ders yükü</h2></div></div>
+    <p class="modal-intro">Seçtiğiniz sınıfların ders yükü bununla değiştirilir. Öğretmenler "Otomatik" olarak kopyalanır.</p>
+    <div class="checks">${others.map(c => `<label><input type="checkbox" value="${c.id}"> ${esc(c.name)}</label>`).join('')}</div>
+    <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Kopyala</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const targets = [...wrap.querySelectorAll('input:checked')].map(i => i.value);
+    const src = S.load.filter(l => l.classId === S.cls);
+    for (const cid of targets) { S.load = S.load.filter(l => l.classId !== cid); for (const l of src) S.load.push({ ...l, id: OA.uid(), classId: cid, teacherId: '' }); delete S.sched[cid]; }
+    wrap.remove(); save(); renderAll(); OA.toast(`${targets.length} sınıfa kopyalandı`);
+  };
+}
+function pasteTeachers() {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">📋</div><div><div class="eyebrow">Toplu ekle</div><h2>Öğretmen listesi</h2></div></div>
+    <p class="modal-intro">Her satıra bir öğretmen: "Ad Soyad - Branş" ya da Excel'den iki sütun kopyalayın.</p>
+    <textarea class="input" rows="10" placeholder="Ayşe Yılmaz - Matematik&#10;Mehmet Demir - Türkçe"></textarea>
+    <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Ekle</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const lines = wrap.querySelector('textarea').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    for (const l of lines) { const [name, branch = ''] = l.split(/\t| - /).map(x => x.trim()); S.teachers.push({ id: OA.uid(), name, branch, off: {} }); }
+    wrap.remove(); save(); renderAll(); OA.toast(`${lines.length} öğretmen eklendi`);
+  };
+}
+
+// ---------- Program tabloları ----------
+function lunchRow(p, cols) { return p + 1 === +S.lunchAfter && gapAfter(p) > 0 && p + 1 < S.periods ? `<tr class="lunch"><td></td><td colspan="${cols}">🍽️ Öğle arası (${gapAfter(p)} dk)</td></tr>` : ''; }
+function classGrid(cid, editable) {
+  const tm = times();
+  let rows = '';
+  for (let p = 0; p < S.periods; p++) {
+    rows += `<tr><th class="per"><b>${p + 1}. Ders</b><small>${tm[p]}</small></th>${Array.from({ length: S.days }, (_, d) => {
+      const l = ld(S.sched[cid]?.[key(d, p)]), s = l && sub(l.subjectId);
+      return s ? `<td class="f ${editable ? '' : 'ro'}" style="--lc:${s.color}" data-d="${d}" data-p="${p}"><b>${esc(s.name)}</b><small>${esc(shortName(tch(teacherOf(l))?.name) || '—')}</small></td>`
+        : `<td class="${editable ? '' : 'ro'}" data-d="${d}" data-p="${p}"></td>`;
+    }).join('')}</tr>${lunchRow(p, S.days)}`;
+  }
+  return `<table class="tt"><thead><tr><th class="per"></th>${DAYS.slice(0, S.days).map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+function teacherGrid(tid, editable) {
+  const tm = times(), t = tch(tid);
+  let rows = '';
+  for (let p = 0; p < S.periods; p++) {
+    rows += `<tr><th class="per"><b>${p + 1}. Ders</b><small>${tm[p]}</small></th>${Array.from({ length: S.days }, (_, d) => {
+      const at = teacherAt(tid, d, p), s = at && sub(at.l.subjectId);
+      const ro = editable ? '' : 'ro', at2 = `data-d="${d}" data-p="${p}"`;
+      if (s) return `<td class="f ${ro}" style="--lc:${s.color}" ${at2}><b>${esc(cName(at.cid))}</b><small>${esc(s.name)}</small></td>`;
+      return `<td class="${ro} ${isOff(t, d, p) ? 'off' : ''}" ${at2} title="${isOff(t, d, p) ? 'Müsait değil' : 'Boş'}"></td>`;
+    }).join('')}</tr>${lunchRow(p, S.days)}`;
+  }
+  return `<table class="tt"><thead><tr><th class="per"></th>${DAYS.slice(0, S.days).map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderClassView() {
+  const cls = classes();
+  if (!cls.length) { $('#view').innerHTML = '<div class="panel empty-state"><div class="big">🏫</div>Programda sınıf yok. Veriler sekmesinden ekleyin.</div>'; return; }
+  if (!S.cls || !S.classIds.includes(S.cls)) S.cls = cls[0].id;
+  const myLoad = S.load.filter(l => l.classId === S.cls);
+  $('#view').innerHTML = `<div class="split">
+    <div class="panel"><div class="picker"><div class="seg" id="clsSeg">${cls.map(c => `<button data-c="${c.id}" class="${S.cls === c.id ? 'on' : ''}">${esc(c.name)}</button>`).join('')}</div></div>
+      ${classGrid(S.cls, true)}<p class="small" style="margin:8px 0 0">Bir kutuya tıklayarak dersi değiştirin ya da boşaltın; öğretmeni o saatte başka sınıfta olan dersler seçilemez.</p></div>
+    <div class="panel"><h2><span><span class="h-ic">📚</span> ${esc(cName(S.cls))} dersleri</span></h2>
+      <div class="side-list">${myLoad.map(l => { const s = sub(l.subjectId), n = placedCount(l); return s ? `<div style="--lc:${s.color}"><span>${esc(s.name)}<br><small>${esc(tch(teacherOf(l))?.name || 'öğretmen yok')}</small></span><span class="chip ${n === +l.hours ? 'ok' : n > +l.hours ? 'warn' : 'bad'}">${n}/${l.hours}</span></div>` : ''; }).join('')}</div></div>
+  </div>`;
+}
+function renderTeacherView() {
+  if (!S.teachers.length) { $('#view').innerHTML = '<div class="panel empty-state"><div class="big">🧑‍🏫</div>Henüz öğretmen yok.</div>'; return; }
+  if (!tch(S.tch)) S.tch = S.teachers[0].id;
+  const t = tch(S.tch), mine = S.load.filter(l => teacherOf(l) === t.id);
+  const byBranch = {};
+  for (const x of S.teachers) (byBranch[x.branch || 'Branşsız'] = byBranch[x.branch || 'Branşsız'] || []).push(x);
+  const busyDays = new Set(); for (let d = 0; d < S.days; d++) for (let p = 0; p < S.periods; p++) if (teacherAt(t.id, d, p)) busyDays.add(d);
+  const free = S.teachers.filter(x => !isOff(x, +S.freeD, +S.freeP) && !teacherAt(x.id, +S.freeD, +S.freeP));
+  $('#view').innerHTML = `<div class="split">
+    <div class="panel"><div class="picker">
+      <select class="input" id="tchSel">${Object.entries(byBranch).sort((a, b) => a[0].localeCompare(b[0], 'tr')).map(([b, list]) => `<optgroup label="${esc(b)}">${list.map(x => `<option value="${x.id}" ${x.id === t.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select>
+      <span class="chip">${esc(t.branch)}</span><span class="chip info">${mine.reduce((n, l) => n + +l.hours, 0)} saat / hafta</span>
+      ${S.days - busyDays.size ? `<span class="chip ok">${S.days - busyDays.size} boş gün: ${[...Array(S.days).keys()].filter(d => !busyDays.has(d)).map(d => DS[d]).join(', ')}</span>` : ''}
+    </div>${teacherGrid(t.id, true)}<p class="small" style="margin:8px 0 0">Bir kutuya tıklayarak öğretmenin o saatteki dersini değiştirin ya da boşaltın; sınıfı o saatte başka derste olanlar seçilemez.</p></div>
+    <div class="stack">
+      <div class="panel"><h2><span><span class="h-ic">📚</span> Girdiği dersler</span></h2>
+        <div class="side-list">${mine.map(l => { const s = sub(l.subjectId); return `<div style="--lc:${s.color}"><span>${esc(cName(l.classId))} · ${esc(s.name)}${!l.teacherId ? '<br><small>otomatik atandı</small>' : ''}</span><span class="chip">${l.hours} sa</span></div>`; }).join('') || '<span class="small">Ders atanmamış.</span>'}</div></div>
+      <div class="panel"><h2><span><span class="h-ic">🔎</span> Boş öğretmen bul</span></h2>
+        <div class="row" style="flex-wrap:nowrap"><select class="input" id="freeD">${DAYS.slice(0, S.days).map((d, i) => `<option value="${i}" ${+S.freeD === i ? 'selected' : ''}>${d}</option>`).join('')}</select>
+        <select class="input" id="freeP">${Array.from({ length: S.periods }, (_, p) => `<option value="${p}" ${+S.freeP === p ? 'selected' : ''}>${p + 1}. ders</option>`).join('')}</select></div>
+        <div class="free">${free.map(x => `<span class="chip ok" title="${esc(x.branch)}">${esc(shortName(x.name))} · ${esc(x.branch)}</span>`).join('') || '<span class="small">Bu saatte boş öğretmen yok.</span>'}</div>
+        <p class="small" style="margin:8px 0 0">Ders doldurma görevlendirmesi için o saatte dersi olmayan ve müsait öğretmenler.</p></div>
+    </div>
+  </div>`;
+}
+function carsafTable(mode) {
+  const rowsList = mode === 'sinif' ? classes().map(c => ({ id: c.id, name: c.name })) : S.teachers.map(t => ({ id: t.id, name: t.name, sub: t.branch }));
+  let head1 = '<tr><th class="rh" rowspan="2">' + (mode === 'sinif' ? 'Sınıf' : 'Öğretmen') + '</th>' + DAYS.slice(0, S.days).map(d => `<th colspan="${S.periods}" class="dsep">${d}</th>`).join('') + '</tr>';
+  let head2 = '<tr>' + Array.from({ length: S.days }, (_, d) => Array.from({ length: S.periods }, (_, p) => `<th class="${p === 0 ? 'dsep' : ''}">${p + 1}</th>`).join('')).join('') + '</tr>';
+  const body = rowsList.map(r => '<tr><th class="rh">' + esc(r.name) + (r.sub ? `<br><small style="font-weight:700;color:var(--muted)">${esc(r.sub)}</small>` : '') + '</th>' + Array.from({ length: S.days }, (_, d) => Array.from({ length: S.periods }, (_, p) => {
+    const sep = p === 0 ? 'dsep' : '';
+    if (mode === 'sinif') {
+      const l = ld(S.sched[r.id]?.[key(d, p)]), s = l && sub(l.subjectId);
+      return s ? `<td class="f ${sep}" style="--lc:${s.color}" title="${esc(s.name)} · ${esc(tch(teacherOf(l))?.name || '')}"><b>${esc(s.short || s.name.slice(0, 4))}</b><small>${esc(OA.initials(tch(teacherOf(l))?.name || ''))}</small></td>` : `<td class="${sep}"></td>`;
+    }
+    const at = teacherAt(r.id, d, p), s = at && sub(at.l.subjectId);
+    return s ? `<td class="f ${sep}" style="--lc:${s.color}" title="${esc(cName(at.cid))} · ${esc(s.name)}"><b>${esc(cName(at.cid))}</b><small>${esc(s.short || '')}</small></td>` : `<td class="${sep} ${isOff(tch(r.id), d, p) ? 'off' : ''}"></td>`;
+  }).join('')).join('') + '</tr>').join('');
+  return `<table class="cs"><thead>${head1}${head2}</thead><tbody>${body}</tbody></table>`;
+}
+function renderCarsaf() {
+  $('#view').innerHTML = `<div class="panel"><div class="picker"><div class="seg" id="csSeg"><button data-m="sinif" class="${S.csMode === 'sinif' ? 'on' : ''}">🏫 Sınıflara göre</button><button data-m="ogretmen" class="${S.csMode === 'ogretmen' ? 'on' : ''}">🧑‍🏫 Öğretmenlere göre</button></div>
+    <span class="small">Kutunun üzerine gelince ayrıntı görünür.</span></div>
+    <div class="carsaf-wrap">${carsafTable(S.csMode)}</div></div>`;
+}
+
+// Sınıf programında bir kutuya tıklayınca ders seçme penceresi
+function cellDialog(d, p) {
+  const cid = S.cls, cur = ld(S.sched[cid]?.[key(d, p)]);
+  const items = S.load.filter(l => l.classId === cid && sub(l.subjectId)).map(l => {
+    const t = teacherOf(l), busy = t && teacherAt(t, d, p), off = t && isOff(tch(t), d, p);
+    const block = busy && busy.cid !== cid ? `${shortName(tch(t).name)} bu saatte ${cName(busy.cid)} sınıfında` : off ? `${shortName(tch(t).name)} bu saatte müsait değil` : '';
+    return { l, block, n: placedCount(l) };
+  });
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">🗓️</div><div><div class="eyebrow">${esc(cName(cid))} · ${DAYS[d]} ${p + 1}. ders</div><h2>Ders seçin</h2></div></div>
+    <div class="pick-list">${items.map(x => { const s = sub(x.l.subjectId); return `<button class="btn" data-l="${x.l.id}" style="--lc:${s.color}" ${x.block ? 'disabled' : ''}><span>${esc(s.name)} <small>${esc(tch(teacherOf(x.l))?.name || '')}</small></span><small>${x.block ? '⛔ ' + esc(x.block) : `${x.n}/${x.l.hours} yerleşti`}</small></button>`; }).join('')}</div>
+    <div class="modal-foot" style="margin-top:14px">${cur ? '<button class="btn danger" data-clear>🧽 Boşalt</button>' : '<span></span>'}<button class="btn" data-no>Kapat</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick = e => {
+    const b = e.target.closest('button');
+    if (e.target === wrap || b?.dataset.no != null) return wrap.remove();
+    if (!b) return;
+    S.sched[cid] = S.sched[cid] || {};
+    if (b.dataset.clear != null) delete S.sched[cid][key(d, p)];
+    else if (b.dataset.l) S.sched[cid][key(d, p)] = b.dataset.l;
+    else return;
+    wrap.remove(); save(); renderAll();
+  };
+}
+
+// Öğretmen programında bir kutuya tıklayınca: öğretmenin hangi sınıfa hangi dersi vereceğini seç
+function teacherCellDialog(d, p) {
+  const tid = S.tch, t = tch(tid), cur = teacherAt(tid, d, p), off = isOff(t, d, p);
+  const items = S.load.filter(l => teacherOf(l) === tid && sub(l.subjectId) && OA.classes.get(l.classId)).map(l => {
+    const there = ld(S.sched[l.classId]?.[key(d, p)]);
+    const block = there && teacherOf(there) !== tid ? `${cName(l.classId)} bu saatte ${sub(there.subjectId)?.name || 'başka'} dersinde` : '';
+    return { l, block, n: placedCount(l), here: cur && cur.l.id === l.id };
+  }).sort((a, b) => cName(a.l.classId).localeCompare(cName(b.l.classId), 'tr', { numeric: true }));
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">🧑‍🏫</div><div><div class="eyebrow">${esc(t.name)} · ${DAYS[d]} ${p + 1}. ders</div><h2>Ders seçin</h2></div></div>
+    ${off ? '<p class="modal-intro">⚠️ Öğretmen bu saatte müsait değil olarak işaretli; yine de ders koyabilirsiniz.</p>' : ''}
+    <div class="pick-list">${items.map(x => { const s = sub(x.l.subjectId); return `<button class="btn" data-l="${x.l.id}" style="--lc:${s.color}" ${x.block || x.here ? 'disabled' : ''}><span>${esc(cName(x.l.classId))} · ${esc(s.name)}</span><small>${x.here ? '✔ şu an burada' : x.block ? '⛔ ' + esc(x.block) : `${x.n}/${x.l.hours} yerleşti`}</small></button>`; }).join('') || '<p class="small">Bu öğretmene atanmış ders yok.</p>'}</div>
+    <div class="modal-foot" style="margin-top:14px">${cur ? '<button class="btn danger" data-clear>🧽 Boşalt</button>' : '<span></span>'}<button class="btn" data-no>Kapat</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.onclick = e => {
+    const b = e.target.closest('button');
+    if (e.target === wrap || b?.dataset.no != null) return wrap.remove();
+    if (!b) return;
+    if (b.dataset.clear != null) delete S.sched[cur.cid][key(d, p)];
+    else if (b.dataset.l) {
+      const l = ld(b.dataset.l);
+      // Öğretmen o saatte başka sınıftaysa önce oradan alınır
+      if (cur) delete S.sched[cur.cid][key(d, p)];
+      (S.sched[l.classId] ||= {})[key(d, p)] = l.id;
+    } else return;
+    wrap.remove(); save(); renderAll();
+  };
+}
+
+// ---------- Görünüm ----------
+function renderAll() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  S.classIds = S.classIds.filter(id => OA.classes.get(id));
+  if (S.tab === 'veri') renderData();
+  else if (S.tab === 'sinif') renderClassView();
+  else if (S.tab === 'ogretmen') renderTeacherView();
+  else renderCarsaf();
+  renderStatus();
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.tab = b.dataset.tab; save(); renderAll(); } });
+bindData();
+// Veriler dışındaki sekmelerin tıklamaları (Veriler sekmesininkiler bindData'da)
+$('#view').addEventListener('click', e => {
+  if (S.tab === 'sinif') {
+    const b = e.target.closest('[data-c]'); if (b) { S.cls = b.dataset.c; save(); renderAll(); return; }
+    const td = e.target.closest('td[data-d]'); if (td) cellDialog(+td.dataset.d, +td.dataset.p);
+  } else if (S.tab === 'ogretmen') {
+    const td = e.target.closest('td[data-d]'); if (td) teacherCellDialog(+td.dataset.d, +td.dataset.p);
+  } else if (S.tab === 'carsaf') {
+    const b = e.target.closest('[data-m]'); if (b) { S.csMode = b.dataset.m; save(); renderAll(); }
+  }
+}, true);
+$('#view').addEventListener('change', e => {
+  if (S.tab !== 'ogretmen') return;
+  if (e.target.id === 'tchSel') S.tch = e.target.value;
+  else if (e.target.id === 'freeD') S.freeD = +e.target.value;
+  else if (e.target.id === 'freeP') S.freeP = +e.target.value;
+  else return;
+  save(); renderAll();
+}, true);
+
+$('#btnDist').onclick = () => {
+  if (!S.load.length) return OA.toast('Önce sınıfların ders yükünü girin');
+  if (Object.values(S.sched).some(m => Object.keys(m).length) && !confirm('Mevcut program silinip yeniden dağıtılsın mı? (Elle yaptığınız değişiklikler de silinir)')) return;
+  $('#btnDist').disabled = true; $('#btnDist').textContent = '⏳ Dağıtılıyor…';
+  setTimeout(() => {
+    const miss = schedule();
+    $('#btnDist').disabled = false; $('#btnDist').textContent = '🔀 Otomatik Dağıt';
+    if (S.tab === 'veri') S.tab = 'sinif';
+    save(); renderAll();
+    OA.toast(miss ? `Program hazır — ${miss} saat yerleşmedi, nedenleri için uyarıya tıklayın` : 'Program hazır — tüm dersler çakışmasız yerleşti ✔');
+  }, 30);
+};
+
+// ---------- Yazdırma ----------
+$('#btnPrint').onclick = () => {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">🖨️</div><div><div class="eyebrow">Yazdır</div><h2>Ne yazdırılsın?</h2></div></div>
+    <div class="stack">
+      <div class="checks" style="flex-direction:column;align-items:flex-start">
+        <label><input type="radio" name="pw" value="cls1" checked> Seçili sınıfın programı (${esc(cName(S.cls))})</label>
+        <label><input type="radio" name="pw" value="clsAll"> Tüm sınıfların programları (her sınıf ayrı sayfa)</label>
+        <label><input type="radio" name="pw" value="tch1"> Seçili öğretmenin programı (${esc(tch(S.tch)?.name || '—')})</label>
+        <label><input type="radio" name="pw" value="tchAll"> Tüm öğretmenlerin programları (her öğretmen ayrı sayfa)</label>
+        <label><input type="radio" name="pw" value="csS"> Çarşaf — sınıflara göre</label>
+        <label><input type="radio" name="pw" value="csT"> Çarşaf — öğretmenlere göre</label>
+      </div>
+      <div class="checks"><label><input type="checkbox" id="pColor" checked> Renkli</label></div>
+    </div>
+    <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>🖨️ Yazdır</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const what = wrap.querySelector('input[name=pw]:checked').value, color = wrap.querySelector('#pColor').checked;
+    wrap.remove(); printPages(what, color);
+  };
+};
+function printPages(what, color) {
+  const tm = times();
+  const head = (title, sub2) => `<div class="p-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${esc(title)}</h1>${sub2 ? `<div>${sub2}</div>` : ''}</div>`;
+  const bg = c => color ? `background:color-mix(in srgb,${c} 22%,#fff)` : '';
+  const grid = cellFn => {
+    let rows = '';
+    for (let p = 0; p < S.periods; p++) {
+      rows += `<tr><th class="per">${p + 1}. Ders<br><small>${tm[p]}</small></th>${Array.from({ length: S.days }, (_, d) => cellFn(d, p)).join('')}</tr>`;
+      if (p + 1 === +S.lunchAfter && gapAfter(p) > 0 && p + 1 < S.periods) rows += `<tr class="lunch"><td></td><td colspan="${S.days}">Öğle arası (${gapAfter(p)} dk)</td></tr>`;
+    }
+    return `<table class="p-tt"><thead><tr><th class="per"></th>${DAYS.slice(0, S.days).map(x => `<th>${x}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+  };
+  const classPage = cid => {
+    const mine = S.load.filter(l => l.classId === cid && sub(l.subjectId));
+    return `<div class="paper land">${head(`${cName(cid)} Sınıfı Haftalık Ders Programı`)}${grid((d, p) => {
+      const l = ld(S.sched[cid]?.[key(d, p)]), s = l && sub(l.subjectId);
+      return s ? `<td style="${bg(s.color)}"><b>${esc(s.name)}</b><small>${esc(tch(teacherOf(l))?.name || '')}</small></td>` : '<td></td>';
+    })}<div class="p-sum">${mine.map(l => `<span><b>${esc(sub(l.subjectId).name)}:</b> ${l.hours} sa · ${esc(tch(teacherOf(l))?.name || '—')}</span>`).join('')}</div></div>`;
+  };
+  const teacherPage = tid => {
+    const t = tch(tid), h = S.load.filter(l => teacherOf(l) === tid).reduce((n, l) => n + +l.hours, 0);
+    return `<div class="paper land">${head(`${t.name} — Haftalık Ders Programı`, `${esc(t.branch)} · ${h} saat`)}${grid((d, p) => {
+      const at = teacherAt(tid, d, p), s = at && sub(at.l.subjectId);
+      return s ? `<td style="${bg(s.color)}"><b>${esc(cName(at.cid))}</b><small>${esc(s.name)}</small></td>` : `<td style="${isOff(t, d, p) ? 'background:#eee' : ''}"></td>`;
+    })}</div>`;
+  };
+  const carsafPage = mode => {
+    const rowsList = mode === 'sinif' ? classes().map(c => ({ id: c.id, name: c.name })) : S.teachers.map(t => ({ id: t.id, name: shortName(t.name) }));
+    const h1 = `<tr><th class="rh" rowspan="2" style="width:${mode === 'sinif' ? 46 : 74}px">${mode === 'sinif' ? 'Sınıf' : 'Öğretmen'}</th>${DAYS.slice(0, S.days).map(d => `<th colspan="${S.periods}" class="dsep">${d}</th>`).join('')}</tr>`;
+    const h2 = `<tr>${Array.from({ length: S.days }, () => Array.from({ length: S.periods }, (_, p) => `<th class="${p === 0 ? 'dsep' : ''}">${p + 1}</th>`).join('')).join('')}</tr>`;
+    const body = rowsList.map(r => `<tr><td class="rh">${esc(r.name)}</td>${Array.from({ length: S.days }, (_, d) => Array.from({ length: S.periods }, (_, p) => {
+      const sep = p === 0 ? 'dsep' : '';
+      if (mode === 'sinif') { const l = ld(S.sched[r.id]?.[key(d, p)]), s = l && sub(l.subjectId); return `<td class="${sep}" style="${s ? bg(s.color) : ''}">${s ? esc(s.short || s.name.slice(0, 4)) + '<br>' + esc(OA.initials(tch(teacherOf(l))?.name || '')) : ''}</td>`; }
+      const at = teacherAt(r.id, d, p), s = at && sub(at.l.subjectId);
+      return `<td class="${sep}" style="${s ? bg(s.color) : ''}">${s ? esc(cName(at.cid)) + '<br>' + esc(s.short || '') : ''}</td>`;
+    }).join('')).join('')}</tr>`).join('');
+    return `<div class="paper land">${head(mode === 'sinif' ? 'Okul Ders Programı (Sınıflara Göre)' : 'Okul Ders Programı (Öğretmenlere Göre)')}<table class="p-cs"><thead>${h1}${h2}</thead><tbody>${body}</tbody></table></div>`;
+  };
+  let pages = [];
+  if (what === 'cls1') { if (!S.cls) return OA.toast('Sınıf seçili değil'); pages = [classPage(S.cls)]; }
+  else if (what === 'clsAll') pages = classes().map(c => classPage(c.id));
+  else if (what === 'tch1') { if (!tch(S.tch)) return OA.toast('Öğretmen seçili değil'); pages = [teacherPage(S.tch)]; }
+  else if (what === 'tchAll') pages = S.teachers.map(t => teacherPage(t.id));
+  else pages = [carsafPage(what === 'csS' ? 'sinif' : 'ogretmen')];
+  if (!pages.length) return OA.toast('Yazdırılacak bir şey yok');
+  OA.renderPaper(null, pages.join(''), { orient: 'landscape', margin: '8mm' });
+  window.print();
+}
+
+renderAll();
+</script>
+</body>
+</html>

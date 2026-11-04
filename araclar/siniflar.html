@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sınıflarım · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<script src="../assets/vendor/xlsx.full.min.js"></script>
+<style>
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+  .clist{display:flex;flex-direction:column;gap:8px}
+  .citem{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface-2);cursor:pointer;font:inherit;color:var(--text);text-align:left;width:100%}
+  .citem:hover{border-color:var(--brand)}
+  .citem.on{border-color:var(--brand);background:var(--brand-soft)}
+  .citem .ci{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:900;color:#fff;background:hsl(var(--h) 65% 52%);flex:none}
+  .citem b{display:block;font-weight:900}
+  .citem small{color:var(--muted);font-weight:700}
+  .info{display:flex;gap:10px;align-items:flex-start;background:var(--info-soft);color:var(--info);border-radius:14px;padding:12px 14px;font-weight:700;font-size:13.5px;margin-bottom:16px}
+  .ed-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .ed-head .input{max-width:280px;font-size:18px;font-weight:900}
+  .stu-tbl{width:100%;border-collapse:separate;border-spacing:0}
+  .stu-tbl td,.stu-tbl th{padding:4px 6px;border-bottom:1px solid var(--line-2);text-align:left}
+  .stu-tbl th{font-size:12.5px;color:var(--muted);font-weight:900;padding:8px 6px}
+  .stu-tbl .ix{color:var(--muted);font-weight:800;width:36px;text-align:center}
+  .stu-tbl input{font:inherit;font-weight:800;border:1.5px solid transparent;background:transparent;color:var(--text);border-radius:8px;padding:5px 6px;width:100%}
+  .stu-tbl input:focus{outline:none;border-color:var(--brand);background:var(--surface)}
+  .stu-tbl td.no input{width:80px;color:var(--muted)}
+  .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:11px;background:hsl(var(--h) 65% 52%)}
+  .twrap{max-height:60vh;overflow:auto;border:1.5px solid var(--line-2);border-radius:14px}
+  .empty{text-align:center;color:var(--muted);font-weight:700;padding:40px 16px}
+  .empty .big{font-size:44px}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="info">ℹ️ <span>Sınıf listelerinizi burada bir kez oluşturun. Rastgele Seçici, Grup Oluşturucu, Sınıf Oturma Düzeni, Not Çizelgesi, Katılım Listesi ve Sertifika araçları bu listeleri kullanır. Listeler yalnızca bu cihazda saklanır.</span></div>
+  <div class="layout">
+    <div class="panel">
+      <h2><span><span class="h-ic">📚</span> Sınıflarım</span><button class="btn sm primary" id="btnNew">+ Yeni sınıf</button></h2>
+      <div class="clist" id="clist"></div>
+    </div>
+    <div class="panel" id="editor"></div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '📚', title: 'Sınıflarım',
+  help: {
+    key: 'siniflar', emoji: '📚', title: 'Ortak sınıf listeleriniz',
+    intro: 'Öğrenci listelerini bir kez girersiniz, tüm araçlar aynı listeyi kullanır. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '➕', title: 'Sınıf oluşturun', text: '"Yeni sınıf" ile sınıf ekleyin ve adını (ör. 9-A) yazın.' },
+      { icon: '👥', title: 'Öğrencileri ekleyin', text: 'Numara ve isimleri tek tek yazın, toplu yapıştırın ya da Excel dosyasından yükleyin. E-Okul\'dan aldığınız listeyi de kullanabilirsiniz.' },
+      { icon: '🔗', title: 'Araçlarda kullanın', text: 'Diğer araçlarda "Sınıflarımdan" düğmesi ya da sınıf seçme kutusu bu listeleri getirir.' },
+      { icon: '📥', title: 'Yedekleyin', text: 'Listeyi Excel\'e aktararak saklayabilir, başka bir bilgisayara taşıyabilirsiniz.' }
+    ]
+  }
+});
+
+const $ = s => document.querySelector(s);
+const esc = OA.esc, toast = OA.toast, C = OA.classes;
+let sel = C.active()?.id || null;
+let sortBy = '';
+
+function renderList() {
+  const list = C.list();
+  $('#clist').innerHTML = list.length ? list.map(c => `
+    <button class="citem ${c.id === sel ? 'on' : ''}" data-id="${c.id}">
+      <span class="ci" style="--h:${OA.hue(c.name)}">${esc(c.name.slice(0, 4))}</span>
+      <span><b>${esc(c.name)}</b><small>${c.students.length} öğrenci</small></span>
+    </button>`).join('') : '<div class="small">Henüz sınıf yok. "+ Yeni sınıf" ile başlayın.</div>';
+}
+
+function renderEditor() {
+  const c = C.get(sel);
+  if (!c) {
+    $('#editor').innerHTML = `<div class="empty"><div class="big">🏫</div>Soldan bir sınıf seçin ya da yeni sınıf oluşturun.<br><br><button class="btn primary" onclick="newClass()">+ Yeni sınıf</button></div>`;
+    return;
+  }
+  let st = [...c.students];
+  if (sortBy === 'no') st.sort((a, b) => (+a.no || 1e9) - (+b.no || 1e9));
+  if (sortBy === 'name') st.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+  $('#editor').innerHTML = `
+    <div class="ed-head">
+      <input class="input" id="cname" value="${esc(c.name)}" aria-label="Sınıf adı">
+      <span class="chip">${c.students.length} öğrenci</span>
+      <span class="spacer"></span>
+      <button class="btn sm" id="btnPaste">📋 Yapıştır</button>
+      <button class="btn sm" id="btnXls">📂 Excel'den</button>
+      <button class="btn sm" id="btnFrom">🔄 Diğer araçlardan</button>
+      <button class="btn sm" id="btnExport">📥 Excel'e aktar</button>
+      <button class="btn sm danger" id="btnDel">🗑️ Sınıfı sil</button>
+      <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+    </div>
+    <div class="row" style="margin-bottom:10px;flex-wrap:nowrap;max-width:560px">
+      <input class="input" id="newNo" placeholder="No" style="width:84px;flex:none">
+      <input class="input" id="newName" placeholder="Öğrenci adı yazıp Enter'a basın…">
+      <button class="btn" id="btnAdd">Ekle</button>
+    </div>
+    <div class="twrap">${st.length ? `
+      <table class="stu-tbl">
+        <thead><tr><th class="ix">#</th><th><button class="btn ghost sm" data-sort="no">No ↕</button></th><th><button class="btn ghost sm" data-sort="name">Ad Soyad ↕</button></th><th></th></tr></thead>
+        <tbody>${st.map((s, i) => `<tr data-id="${s.id}">
+          <td class="ix">${i + 1}</td>
+          <td class="no"><input value="${esc(s.no)}" data-f="no" aria-label="Okul numarası"></td>
+          <td><div class="row" style="flex-wrap:nowrap"><span class="av" style="--h:${OA.hue(s.name)}">${esc(OA.initials(s.name))}</span><input value="${esc(s.name)}" data-f="name" aria-label="Ad soyad"></div></td>
+          <td style="width:40px"><button class="x" data-del title="Sil">✕</button></td></tr>`).join('')}
+        </tbody></table>` : '<div class="empty"><div class="big">👥</div>Bu sınıfta henüz öğrenci yok.</div>'}
+    </div>`;
+  bindEditor(c);
+}
+
+function addTo(c, rows) {
+  const have = new Set(c.students.map(s => s.name));
+  let n = 0;
+  for (const r of rows) {
+    const name = OA.up(r.name);
+    if (name && !/^\d+$/.test(name) && !have.has(name)) { c.students.push({ id: OA.uid(), no: String(r.no ?? '').trim(), name }); have.add(name); n++; }
+  }
+  C.save(c); renderAll();
+  return n;
+}
+
+function bindEditor(c) {
+  $('#cname').addEventListener('input', e => { c.name = e.target.value; C.save(c); renderList(); });
+  $('#editor tbody')?.addEventListener('input', e => {
+    const tr = e.target.closest('tr'), s = c.students.find(x => x.id === tr.dataset.id);
+    s[e.target.dataset.f] = e.target.value; C.save(c);
+  });
+  $('#editor tbody')?.addEventListener('change', e => {
+    if (e.target.dataset.f !== 'name') return;
+    const s = c.students.find(x => x.id === e.target.closest('tr').dataset.id);
+    s.name = e.target.value = OA.up(e.target.value); C.save(c);
+  });
+  $('#editor').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.del != null) {
+      const s = c.students.find(x => x.id === b.closest('tr').dataset.id);
+      if (!confirm(`${s.name} silinsin mi?`)) return;
+      c.students = c.students.filter(x => x !== s); C.save(c); renderAll();
+    } else if (b.dataset.sort) { sortBy = sortBy === b.dataset.sort ? '' : b.dataset.sort; renderEditor(); }
+  };
+  const addOne = () => {
+    if (!$('#newName').value.trim()) return;
+    addTo(c, [{ no: $('#newNo').value, name: $('#newName').value }]);
+    $('#newNo').focus();
+  };
+  $('#btnAdd').onclick = addOne;
+  $('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') addOne(); });
+  $('#newNo').addEventListener('keydown', e => { if (e.key === 'Enter') $('#newName').focus(); });
+  $('#btnDel').onclick = () => {
+    if (!confirm(`"${c.name}" sınıfı ve tüm öğrenci listesi silinsin mi?`)) return;
+    C.remove(c.id); sel = C.active()?.id || null; renderAll();
+  };
+  $('#btnPaste').onclick = () => pasteDialog(c);
+  $('#btnFrom').onclick = () => fromTools(c);
+  $('#btnXls').onclick = () => $('#file').click();
+  $('#file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) readExcel(f, c); };
+  $('#btnExport').onclick = () => {
+    if (typeof XLSX === 'undefined') return toast('Excel aracı yüklenemedi, internet bağlantınızı kontrol edin');
+    const ws = XLSX.utils.aoa_to_sheet([['No', 'Ad Soyad'], ...c.students.map(s => [s.no, s.name])]);
+    ws['!cols'] = [{ wch: 8 }, { wch: 28 }];
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Öğrenciler');
+    XLSX.writeFile(wb, `${c.name.replace(/[\\/:*?"<>|\s]+/g, '-') || 'sinif'}.xlsx`);
+  };
+}
+
+function pasteDialog(c) {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back';
+  wrap.innerHTML = `
+    <div class="modal">
+      <div class="modal-hero"><div class="modal-emoji">📋</div><div><div class="eyebrow">Toplu ekle</div><h2>Listeyi yapıştırın</h2></div></div>
+      <p class="modal-intro">Her satıra bir öğrenci. Excel'den "No" ve "Ad Soyad" sütunlarını birlikte kopyalarsanız numaralar da alınır.</p>
+      <textarea class="input" rows="10" placeholder="123	AHMET YILMAZ&#10;124	AYŞE KAYA"></textarea>
+      <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Ekle</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  const ta = wrap.querySelector('textarea'); ta.focus();
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const rows = ta.value.split(/\r?\n/).map(l => {
+      const parts = l.split('\t').map(x => x.trim()).filter(Boolean);
+      if (parts.length > 1 && /^\d+$/.test(parts[0])) return { no: parts[0], name: parts.slice(1).join(' ') };
+      const m = l.trim().match(/^(\d+)[.)\s-]+(.+)$/);
+      return m ? { no: m[1], name: m[2] } : { name: parts.join(' ') };
+    });
+    wrap.remove(); toast(`${addTo(c, rows)} öğrenci eklendi`);
+  };
+}
+
+function fromTools(c) {
+  const sira = OA.store.get('siraAyarlama.v1', null)?.students || [];
+  const not = OA.store.get('oa.notCizelgesi', null)?.students || [];
+  if (!sira.length && !not.length) return toast('Diğer araçlarda kayıtlı öğrenci bulunamadı');
+  const n = addTo(c, [...not.map(s => ({ no: s.no, name: s.name })), ...sira.map(s => ({ name: s.name }))]);
+  toast(`${n} öğrenci eklendi (Sınıf Oturma Düzeni ve Not Çizelgesi'nden)`);
+}
+
+function readExcel(f, c) {
+  if (typeof XLSX === 'undefined') return toast('Excel okuyucu yüklenemedi, internet bağlantınızı kontrol edin');
+  const rd = new FileReader();
+  rd.onload = ev => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' }).filter(r => r.some(x => String(x).trim()));
+      const isNum = v => v !== '' && !isNaN(+v);
+      const hi = rows.slice(0, 6).findIndex(r => r.some(x => /ad|isim|öğrenci|ogrenci/i.test(String(x))));
+      const head = hi >= 0 ? rows[hi].map(x => String(x).toLocaleLowerCase('tr').trim()) : [];
+      const data = hi >= 0 ? rows.slice(hi + 1) : rows;
+      const width = Math.max(...rows.map(r => r.length));
+      let nameCol = head.findIndex(h => /ad[ıi]? ?soyad|isim|öğrenci ad|^ad$/.test(h));
+      const surCol = head.findIndex(h => /^soyad/.test(h));
+      if (nameCol < 0) for (let k = 0; k < width && nameCol < 0; k++) if (data.filter(r => String(r[k]).trim() && !isNum(r[k])).length > data.length / 2) nameCol = k;
+      let noCol = head.findIndex(h => /^(no|numara|okul no|öğrenci no|ogrenci no|okul numarası)$/.test(h));
+      if (noCol < 0 && nameCol > 0 && data.every(r => !String(r[nameCol - 1]).trim() || isNum(r[nameCol - 1]))) noCol = nameCol - 1;
+      if (nameCol < 0) return toast('Ad sütunu bulunamadı');
+      const n = addTo(c, data.map(r => ({ no: noCol >= 0 ? r[noCol] : '', name: String(r[nameCol]) + (surCol >= 0 ? ' ' + r[surCol] : '') })));
+      toast(`${n} öğrenci eklendi`);
+    } catch (err) { console.error(err); toast('Dosya okunamadı: ' + err.message); }
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+function newClass() {
+  const c = C.create(`${C.list().length + 1}. Sınıf`);
+  sel = c.id; C.setActive(c.id); renderAll();
+  $('#cname').select();
+}
+$('#btnNew').onclick = newClass;
+$('#clist').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  sel = b.dataset.id; C.setActive(sel); renderAll();
+});
+
+function renderAll() { renderList(); renderEditor(); }
+renderAll();
+</script>
+</body>
+</html>

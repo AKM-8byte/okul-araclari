@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Not Hesaplayıcı · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .page{max-width:1080px}
+  .tabsbar{display:flex;justify-content:center;margin-bottom:18px}
+  .tabsbar .seg button{padding:9px 16px;font-size:15px}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  .result{position:sticky;top:76px;text-align:center}
+  .ring{
+    --p:0;--c:var(--brand);width:170px;height:170px;border-radius:50%;margin:6px auto 12px;display:grid;place-items:center;
+    background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line-2) 0);transition:--p .4s;
+  }
+  .ring > div{width:134px;height:134px;border-radius:50%;background:var(--surface);display:grid;place-items:center;align-content:center}
+  .ring b{font-size:38px;font-weight:900;line-height:1}
+  .ring span{font-size:12px;color:var(--muted);font-weight:800}
+  .res-label{font-size:18px;font-weight:900;margin-bottom:6px}
+  .res-note{font-size:13.5px;color:var(--muted);font-weight:600;margin:10px 0 0}
+
+  .notes{display:flex;flex-wrap:wrap;gap:10px}
+  .note{display:flex;flex-direction:column;gap:4px;align-items:center;background:var(--surface-2);border:1.5px solid var(--line-2);border-radius:14px;padding:8px 8px 6px;position:relative}
+  .note label{font-size:12px;font-weight:800;color:var(--muted)}
+  .note .input{width:76px;text-align:center;font-size:18px;font-weight:900;padding:6px}
+  .note .x{position:absolute;top:-8px;right:-8px;background:var(--surface);border:1.5px solid var(--line);border-radius:50%;width:22px;height:22px;padding:0;font-size:11px;line-height:1}
+  .add-note{border:2px dashed var(--line);background:none;border-radius:14px;min-width:92px;font:inherit;font-weight:800;color:var(--muted);cursor:pointer}
+  .add-note:hover{border-color:var(--brand);color:var(--brand)}
+  .sec{margin-bottom:16px}
+  .sec h3{font-size:14px;margin:0 0 10px;font-weight:900;display:flex;align-items:center;gap:6px}
+
+  .target{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--brand-soft);border-radius:14px;padding:12px 14px;margin-top:6px}
+  .target .input{width:80px;text-align:center;font-weight:900}
+  .target-msg{font-weight:800;color:var(--brand-ink);flex-basis:100%}
+
+  .tbl .input{padding:6px 8px}
+  .tbl td.num .input{width:76px;text-align:center}
+  .tbl td.out{font-weight:900;text-align:center;white-space:nowrap}
+  .tblwrap{overflow-x:auto}
+  .belge{margin-top:10px;display:flex;flex-direction:column;gap:6px;align-items:center}
+  .info-box{font-size:13px;color:var(--muted);background:var(--surface-2);border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px;margin-top:14px;font-weight:600}
+  @media (max-width:860px){.layout{grid-template-columns:1fr}.result{position:static}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="tabsbar">
+    <div class="seg" id="tabs">
+      <button data-tab="ders">📘 Ders Notu</button>
+      <button data-tab="donem">📚 Dönem Ortalaması</button>
+      <button data-tab="yil">🎓 Yıl Sonu</button>
+    </div>
+  </div>
+
+  <!-- Ders notu -->
+  <section data-pane="ders" class="layout">
+    <div class="panel">
+      <h2><span><span class="h-ic">📘</span> Bir dersin dönem puanı</span>
+        <input class="input" id="dersAd" placeholder="Ders adı (isteğe bağlı)" style="max-width:220px"></h2>
+      <div class="sec"><h3>✍️ Yazılı sınavlar</h3><div class="notes" data-list="sinav"></div></div>
+      <div class="sec"><h3>🎯 Performans notları</h3><div class="notes" data-list="perf"></div></div>
+      <div class="sec"><h3>🧪 Proje notu <span class="small">(varsa)</span></h3><div class="notes" data-list="proje"></div></div>
+      <div class="target">
+        <b>🎯 Hedef ortalama</b>
+        <input class="input" type="number" id="hedef" min="0" max="100">
+        <span class="small">Boş bıraktığınız kutular "henüz girmediğim notlar" sayılır.</span>
+        <div class="target-msg" id="hedefMsg"></div>
+      </div>
+      <div class="info-box">ℹ️ Dönem puanı; yazılı, performans ve proje notlarının aritmetik ortalamasıyla hesaplanır. Boş kutular hesaba katılmaz.</div>
+    </div>
+    <div class="panel result" id="dersRes"></div>
+  </section>
+
+  <!-- Dönem ortalaması -->
+  <section data-pane="donem" class="layout">
+    <div class="panel">
+      <h2><span><span class="h-ic">📚</span> Ağırlıklı dönem ortalaması</span>
+        <span class="row"><button class="btn sm" data-sample="donem">✨ Örnek dersler</button><button class="btn sm danger" data-clear="donem">Temizle</button></span></h2>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Ders</th><th>Haftalık saat</th><th>Puan</th><th></th><th></th></tr></thead>
+        <tbody id="donemBody"></tbody>
+      </table></div>
+      <button class="btn sm" style="margin-top:10px" data-add="donem">+ Ders ekle</button>
+      <div class="info-box">ℹ️ Ağırlıklı ortalama = Σ(puan × haftalık ders saati) ÷ Σ(haftalık ders saati). Ders saati çok olan dersin etkisi daha büyüktür.</div>
+    </div>
+    <div class="panel result" id="donemRes"></div>
+  </section>
+
+  <!-- Yıl sonu -->
+  <section data-pane="yil" class="layout">
+    <div class="panel">
+      <h2><span><span class="h-ic">🎓</span> Yıl sonu başarı puanı</span>
+        <span class="row"><button class="btn sm" data-sample="yil">✨ Örnek dersler</button><button class="btn sm danger" data-clear="yil">Temizle</button></span></h2>
+      <div class="tblwrap"><table class="tbl">
+        <thead><tr><th>Ders</th><th>Saat</th><th>1. Dönem</th><th>2. Dönem</th><th>Yıl sonu</th><th></th></tr></thead>
+        <tbody id="yilBody"></tbody>
+      </table></div>
+      <button class="btn sm" style="margin-top:10px" data-add="yil">+ Ders ekle</button>
+      <div class="info-box">ℹ️ Her dersin yıl sonu puanı iki dönem puanının ortalamasıdır. Yıl sonu başarı puanı bu puanların ders saatine göre ağırlıklı ortalamasıdır.</div>
+    </div>
+    <div class="panel result" id="yilRes"></div>
+  </section>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🧮', title: 'Not / Ortalama Hesaplayıcı',
+  help: {
+    key: 'not-hesapla', emoji: '🧮', title: 'Bu bir not hesaplama aracıdır',
+    intro: 'Ders notunuzu, dönem ortalamanızı ve yıl sonu puanınızı saniyeler içinde hesaplar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '📘', title: 'Ders Notu', text: 'Bir dersin yazılı, performans ve proje notlarını girin. Hedef yazarsanız kalan sınavlardan kaç almanız gerektiğini söyler.' },
+      { icon: '📚', title: 'Dönem Ortalaması', text: 'Derslerinizi haftalık saatleri ve puanlarıyla ekleyin. Ağırlıklı ortalamanız ile Teşekkür/Takdir durumunuz görünür.' },
+      { icon: '🎓', title: 'Yıl Sonu', text: 'İki dönemin puanlarını girin; her dersin yıl sonu puanı ve genel başarı puanı hesaplanır.' },
+      { icon: '💾', title: 'Otomatik kayıt', text: 'Girdiğiniz notlar bu cihazda saklanır; sayfayı kapatıp açtığınızda kaldığınız yerden devam edersiniz.' }
+    ]
+  }
+});
+
+const KEY = 'oa.notHesapla';
+const SAMPLE = [['Türk Dili ve Edebiyatı', 5], ['Matematik', 6], ['Fizik', 2], ['Kimya', 2], ['Biyoloji', 2], ['Tarih', 2], ['Coğrafya', 2], ['Yabancı Dil', 4], ['Din Kültürü', 2], ['Beden Eğitimi', 2]];
+let S = OA.store.get(KEY, null) || {
+  tab: 'ders', dersAd: '', hedef: 50,
+  ders: { sinav: ['', ''], perf: ['', ''], proje: [] },
+  donem: [{ ad: '', saat: '', puan: '' }],
+  yil: [{ ad: '', saat: '', d1: '', d2: '' }]
+};
+const save = () => OA.store.set(KEY, S);
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const num = v => v === '' || v == null || isNaN(+v) ? null : Math.max(0, Math.min(100, +v));
+const mean = a => { const v = a.map(num).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+
+function ring(score, title, extra = '') {
+  const b = OA.band(score);
+  const color = !b ? 'var(--line)' : { ok: 'var(--ok)', info: 'var(--info)', warn: 'var(--warn)', bad: 'var(--bad)' }[b.cls];
+  return `
+    <h2 style="justify-content:center">${title}</h2>
+    <div class="ring" style="--p:${score ?? 0};--c:${color}"><div><b>${OA.fmt(score)}</b><span>/ 100</span></div></div>
+    ${b ? `<div class="res-label">${b.label} <span class="chip ${b.cls}">${b.n}</span></div>` : '<div class="res-label muted">Not girin</div>'}
+    ${extra}`;
+}
+
+// ---------- Ders notu ----------
+const LISTS = { sinav: ['Sınav', 4], perf: ['Performans', 4], proje: ['Proje', 1] };
+function renderDers() {
+  $('#dersAd').value = S.dersAd; $('#hedef').value = S.hedef;
+  for (const [key, [label, max]] of Object.entries(LISTS)) {
+    const el = document.querySelector(`[data-list="${key}"]`);
+    el.innerHTML = S.ders[key].map((v, i) => `
+      <div class="note"><label>${i + 1}. ${label}</label>
+        <input class="input" type="number" min="0" max="100" inputmode="numeric" value="${esc(v)}" data-k="${key}" data-i="${i}">
+        <button class="x" data-del="${key}" data-i="${i}" title="Kaldır">✕</button></div>`).join('') +
+      (S.ders[key].length < max ? `<button class="add-note" data-addnote="${key}">+ ${label}</button>` : '');
+  }
+  calcDers();
+}
+function calcDers() {
+  const all = [...S.ders.sinav, ...S.ders.perf, ...S.ders.proje];
+  const avg = mean(all);
+  const filled = all.map(num).filter(x => x != null), empty = all.length - filled.length;
+  const hedef = num(S.hedef);
+  let msg = '';
+  if (hedef != null && all.length) {
+    const need = (hedef * all.length - filled.reduce((s, x) => s + x, 0)) / (empty || 1);
+    if (!empty) msg = avg >= hedef ? `✅ Hedefe ulaştınız! Ortalamanız ${OA.fmt(avg)}.` : `😕 Tüm notlar girildi, ortalama hedefin ${OA.fmt(hedef - avg)} puan altında.`;
+    else if (need <= 0) msg = `🎉 Kalan notlardan 0 alsanız bile hedefinize ulaşıyorsunuz.`;
+    else if (need > 100) msg = `⚠️ Kalan ${empty} notun hepsinden 100 alsanız da ${OA.fmt(hedef)} ortalamaya ulaşılamıyor.`;
+    else msg = `💪 Hedefe ulaşmak için kalan ${empty} notun her birinden en az <b>${Math.ceil(need)}</b> almalısınız.`;
+  }
+  $('#hedefMsg').innerHTML = msg;
+  $('#dersRes').innerHTML = ring(avg, S.dersAd ? esc(S.dersAd) : 'Dönem puanı',
+    `<p class="res-note">${filled.length} not girildi${empty ? `, ${empty} not bekleniyor` : ''}.</p>`);
+}
+document.querySelector('[data-pane="ders"]').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.k) S.ders[t.dataset.k][+t.dataset.i] = t.value;
+  else if (t.id === 'hedef') S.hedef = t.value;
+  else if (t.id === 'dersAd') S.dersAd = t.value;
+  save(); calcDers();
+});
+document.querySelector('[data-pane="ders"]').addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.addnote) S.ders[t.dataset.addnote].push('');
+  else if (t.dataset.del) S.ders[t.dataset.del].splice(+t.dataset.i, 1);
+  else return;
+  save(); renderDers();
+});
+
+// ---------- Dönem / yıl tabloları ----------
+function weighted(rows, scoreOf) {
+  let sum = 0, w = 0;
+  for (const r of rows) { const p = scoreOf(r), h = +r.saat; if (p != null && h > 0) { sum += p * h; w += h; } }
+  return w ? { avg: sum / w, hours: w } : { avg: null, hours: 0 };
+}
+function belge(avg, rows, scoreOf) {
+  if (avg == null) return '';
+  const fails = rows.filter(r => { const p = scoreOf(r); return p != null && p < 50; });
+  let b = avg >= 85 ? '<span class="chip ok">🏆 Takdir Belgesi</span>' : avg >= 70 ? '<span class="chip info">🎖️ Teşekkür Belgesi</span>' : '<span class="chip">Belge sınırı: 70 Teşekkür · 85 Takdir</span>';
+  if (avg >= 70 && fails.length) b = '<span class="chip warn">Başarısız ders olduğu için belge alınamaz</span>';
+  return `<div class="belge">${b}${fails.length ? `<span class="chip bad">${fails.length} dersten 50 altı</span>` : ''}</div>`;
+}
+
+function renderDonem() {
+  $('#donemBody').innerHTML = S.donem.map((r, i) => {
+    const b = OA.band(num(r.puan));
+    return `<tr>
+      <td><input class="input" value="${esc(r.ad)}" placeholder="Ders adı" data-f="ad" data-i="${i}"></td>
+      <td class="num"><input class="input" type="number" min="0" max="40" value="${esc(r.saat)}" data-f="saat" data-i="${i}"></td>
+      <td class="num"><input class="input" type="number" min="0" max="100" value="${esc(r.puan)}" data-f="puan" data-i="${i}"></td>
+      <td class="out">${b ? `<span class="chip ${b.cls}">${b.n}</span>` : ''}</td>
+      <td><button class="x" data-rm="${i}" title="Sil">✕</button></td></tr>`;
+  }).join('');
+  calcDonem();
+}
+function calcDonem() {
+  const sc = r => num(r.puan);
+  const { avg, hours } = weighted(S.donem, sc);
+  $('#donemRes').innerHTML = ring(avg, 'Dönem ortalaması', `<p class="res-note">${hours} saatlik ders hesaba katıldı.</p>${belge(avg, S.donem, sc)}`);
+  // satır rozetlerini güncelle
+  document.querySelectorAll('#donemBody tr').forEach((tr, i) => {
+    const b = OA.band(num(S.donem[i].puan));
+    tr.querySelector('.out').innerHTML = b ? `<span class="chip ${b.cls}">${b.n}</span>` : '';
+  });
+}
+
+const yilScore = r => { const a = num(r.d1), b = num(r.d2); return a != null && b != null ? (a + b) / 2 : a ?? b; };
+function renderYil() {
+  $('#yilBody').innerHTML = S.yil.map((r, i) => `<tr>
+      <td><input class="input" value="${esc(r.ad)}" placeholder="Ders adı" data-f="ad" data-i="${i}"></td>
+      <td class="num"><input class="input" type="number" min="0" max="40" value="${esc(r.saat)}" data-f="saat" data-i="${i}"></td>
+      <td class="num"><input class="input" type="number" min="0" max="100" value="${esc(r.d1)}" data-f="d1" data-i="${i}"></td>
+      <td class="num"><input class="input" type="number" min="0" max="100" value="${esc(r.d2)}" data-f="d2" data-i="${i}"></td>
+      <td class="out"></td>
+      <td><button class="x" data-rm="${i}" title="Sil">✕</button></td></tr>`).join('');
+  calcYil();
+}
+function calcYil() {
+  const { avg, hours } = weighted(S.yil, yilScore);
+  document.querySelectorAll('#yilBody tr').forEach((tr, i) => {
+    const s = yilScore(S.yil[i]), b = OA.band(s);
+    tr.querySelector('.out').innerHTML = b ? `${OA.fmt(s)} <span class="chip ${b.cls}">${s >= 50 ? 'Geçti' : 'Kaldı'}</span>` : '';
+  });
+  $('#yilRes').innerHTML = ring(avg, 'Yıl sonu başarı puanı', `<p class="res-note">${hours} saatlik ders hesaba katıldı.</p>${belge(avg, S.yil, yilScore)}`);
+}
+
+const TABLES = { donem: { render: renderDonem, calc: calcDonem, blank: () => ({ ad: '', saat: '', puan: '' }) },
+                 yil: { render: renderYil, calc: calcYil, blank: () => ({ ad: '', saat: '', d1: '', d2: '' }) } };
+for (const [name, T] of Object.entries(TABLES)) {
+  const pane = document.querySelector(`[data-pane="${name}"]`);
+  pane.addEventListener('input', e => {
+    const t = e.target; if (t.dataset.f == null) return;
+    S[name][+t.dataset.i][t.dataset.f] = t.value; save(); T.calc();
+  });
+  pane.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.add) S[name].push(T.blank());
+    else if (b.dataset.rm != null) { S[name].splice(+b.dataset.rm, 1); if (!S[name].length) S[name].push(T.blank()); }
+    else if (b.dataset.sample) {
+      if (S[name].some(r => r.ad || r.puan || r.d1) && !confirm('Mevcut liste örnek derslerle değiştirilsin mi?')) return;
+      S[name] = SAMPLE.map(([ad, saat]) => ({ ...T.blank(), ad, saat }));
+    }
+    else if (b.dataset.clear) { if (!confirm('Tüm dersler silinsin mi?')) return; S[name] = [T.blank()]; }
+    else return;
+    save(); T.render();
+  });
+}
+
+// ---------- Sekmeler ----------
+function showTab() {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  document.querySelectorAll('[data-pane]').forEach(p => p.style.display = p.dataset.pane === S.tab ? '' : 'none');
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.tab = b.dataset.tab; save(); showTab(); } });
+
+showTab(); renderDers(); renderDonem(); renderYil();
+</script>
+</body>
+</html>

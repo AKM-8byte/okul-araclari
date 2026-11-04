@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sınıf Zamanlayıcı · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .page{max-width:1000px}
+  .tabsbar{display:flex;justify-content:center;margin-bottom:16px}
+  .tabsbar .seg button{padding:9px 18px;font-size:15px}
+  .timer{
+    --tc:var(--brand);position:relative;border-radius:30px;background:var(--surface);border:1.5px solid var(--line);box-shadow:var(--shadow);
+    padding:26px 20px 30px;display:flex;flex-direction:column;align-items:center;gap:18px;transition:background .3s;
+  }
+  .timer.warn{--tc:var(--warn)}
+  .timer.danger{--tc:var(--bad)}
+  .timer.done{--tc:var(--bad);animation:flash 1s infinite}
+  @keyframes flash{50%{background:var(--bad-soft)}}
+  .timer:fullscreen{border-radius:0;justify-content:center;border:none;background:var(--bg)}
+  .label{font:inherit;font-size:22px;font-weight:900;text-align:center;border:1.5px solid transparent;background:transparent;color:var(--text);border-radius:12px;padding:4px 12px;width:min(560px,100%)}
+  .label:focus{outline:none;border-color:var(--brand)}
+  .ringwrap{position:relative;width:min(420px,78vw);aspect-ratio:1}
+  .timer:fullscreen .ringwrap{width:min(70vh,80vw)}
+  .ringwrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ringwrap circle{fill:none;stroke-width:16}
+  .ringwrap .bg{stroke:var(--line-2)}
+  .ringwrap .fg{stroke:var(--tc);stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .3s}
+  .time{position:absolute;inset:0;display:grid;place-items:center;align-content:center;text-align:center}
+  .time b{font-size:clamp(56px,13vw,120px);font-weight:900;font-variant-numeric:tabular-nums;color:var(--tc);line-height:1;letter-spacing:-.02em}
+  .timer:fullscreen .time b{font-size:min(16vh,18vw)}
+  .time span{font-weight:800;color:var(--muted);margin-top:6px}
+  .timer.danger .time b{animation:beat 1s infinite}
+  @keyframes beat{50%{transform:scale(1.06)}}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btns .btn{font-size:16px;padding:10px 18px}
+  .btns .btn.primary{min-width:150px}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .presets button{font:inherit;font-weight:900;border:1.5px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:999px;padding:7px 14px;cursor:pointer}
+  .presets button:hover{border-color:var(--brand);color:var(--brand)}
+  .custom{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;font-weight:800;color:var(--muted)}
+  .custom .input{width:76px;text-align:center;font-size:18px;font-weight:900}
+  .laps{list-style:none;padding:0;margin:0;width:min(420px,100%);display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+  .laps li{display:flex;justify-content:space-between;padding:7px 12px;border-radius:10px;background:var(--surface-2);font-weight:800;font-variant-numeric:tabular-nums}
+  .keys{text-align:center;margin-top:12px}
+  .timer:fullscreen .presets,.timer:fullscreen .custom,.timer:fullscreen .keys{display:none}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="tabsbar"><div class="seg" id="modeSeg"><button data-mode="down">⏳ Geri Sayım</button><button data-mode="up">⏱️ Kronometre</button></div></div>
+
+  <section class="timer" id="timer">
+    <input class="label" id="label" placeholder="Başlık yazın (ör. Sınavın bitmesine kalan süre)">
+    <div class="ringwrap">
+      <svg viewBox="0 0 320 320"><circle class="bg" cx="160" cy="160" r="140"/><circle class="fg" id="fg" cx="160" cy="160" r="140"/></svg>
+      <div class="time"><b id="time">05:00</b><span id="sub"></span></div>
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="btnStart">▶ Başlat</button>
+      <button class="btn" id="btnReset">↺ Sıfırla</button>
+      <button class="btn" id="btnPlus" title="Bir dakika ekle">+1 dk</button>
+      <button class="btn" id="btnLap" title="Tur kaydet">🏁 Tur</button>
+      <button class="btn" id="btnSound" title="Ses aç / kapat">🔊</button>
+      <button class="btn" id="btnFull" title="Tam ekran">⛶</button>
+    </div>
+    <div class="presets" id="presets"></div>
+    <div class="custom" id="custom">
+      <input class="input" type="number" id="mm" min="0" max="180" aria-label="Dakika"> dk
+      <input class="input" type="number" id="ss" min="0" max="59" aria-label="Saniye"> sn
+      <button class="btn" id="btnSet">Ayarla</button>
+    </div>
+    <ul class="laps" id="laps"></ul>
+  </section>
+  <p class="small keys">Kısayollar: <b>Boşluk</b> başlat/duraklat · <b>R</b> sıfırla · <b>F</b> tam ekran</p>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '⏳', title: 'Sınıf Zamanlayıcı',
+  help: {
+    key: 'zamanlayici', emoji: '⏳', title: 'Bu bir sınıf zamanlayıcısıdır',
+    intro: 'Etkinlik, sınav ya da grup çalışması için tahtaya yansıtılabilir büyük bir sayaç. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '⏱️', title: 'Süreyi seçin', text: 'Hazır sürelerden birine tıklayın ya da dakika/saniye yazıp "Ayarla"ya basın.' },
+      { icon: '▶', title: 'Başlatın', text: '"Başlat" ya da boşluk tuşu ile başlatıp duraklatın. "+1 dk" ile süre ekleyin.' },
+      { icon: '🎨', title: 'Renklere dikkat', text: 'Son 1 dakikada sayaç sarıya, son 10 saniyede kırmızıya döner; süre dolunca alarm çalar.' },
+      { icon: '⛶', title: 'Tahtaya yansıtın', text: 'Tam ekran düğmesi ya da F tuşu ile sayacı büyütün. Kronometre sekmesinde tur da kaydedebilirsiniz.' }
+    ]
+  }
+});
+
+const KEY = 'oa.zamanlayici';
+const $ = s => document.querySelector(s);
+const PRESETS = [1, 2, 3, 5, 10, 15, 20, 30, 40];
+const CIRC = 2 * Math.PI * 140;
+let S = { mode: 'down', dur: 300, label: '', sound: true, ...OA.store.get(KEY, {}) };
+const save = () => OA.store.set(KEY, S);
+// Çalışma durumu: geri sayımda kalan ms, kronometrede geçen ms; çalışırken başlangıç zamanına göre hesaplanır
+let running = false, base = 0, startedAt = 0, laps = [], alarmed = false, raf;
+
+const fmt = ms => {
+  const t = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+  return (h ? h + ':' + String(m).padStart(2, '0') : String(m).padStart(2, '0')) + ':' + String(s).padStart(2, '0');
+};
+const fmtUp = ms => { const cs = Math.floor(ms / 10) % 100; return fmt(Math.floor(ms / 1000) * 1000) + ',' + String(cs).padStart(2, '0'); };
+const now = () => running ? (S.mode === 'down' ? base - (performance.now() - startedAt) : base + (performance.now() - startedAt)) : base;
+
+let ac;
+function beep(freq, dur, vol = .15) {
+  if (!S.sound) return;
+  try {
+    ac = ac || new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = freq; g.gain.value = vol;
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + dur);
+    o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + dur);
+  } catch {}
+}
+const alarm = () => { for (let r = 0; r < 3; r++) [0, 1, 2].forEach(i => setTimeout(() => beep(i % 2 ? 660 : 990, .25), r * 900 + i * 220)); };
+
+function draw() {
+  const v = now(), t = $('#timer');
+  if (S.mode === 'down') {
+    const left = Math.max(0, v);
+    $('#time').textContent = fmt(left);
+    $('#fg').style.strokeDashoffset = CIRC * (1 - left / Math.max(1, S.dur * 1000));
+    t.classList.toggle('warn', left > 10000 && left <= 60000 && S.dur > 60);
+    t.classList.toggle('danger', left > 0 && left <= 10000);
+    if (running && left <= 0) {
+      running = false; base = 0; t.classList.add('done'); $('#sub').textContent = 'Süre doldu! ⏰';
+      if (!alarmed) { alarmed = true; alarm(); }
+      updateBtns();
+    }
+    if (running && left > 0 && left <= 10000 && Math.ceil(left / 1000) !== draw.lastTick) { draw.lastTick = Math.ceil(left / 1000); beep(880, .08, .08); }
+  } else {
+    $('#time').textContent = fmtUp(v);
+    $('#fg').style.strokeDashoffset = CIRC * (1 - (v % 60000) / 60000);
+    t.classList.remove('warn', 'danger');
+  }
+  if (running) raf = requestAnimationFrame(draw);
+}
+
+function updateBtns() {
+  $('#btnStart').textContent = running ? '⏸ Duraklat' : (S.mode === 'down' && base <= 0 ? '▶ Yeniden' : '▶ Başlat');
+  $('#btnSound').textContent = S.sound ? '🔊' : '🔇';
+  $('#btnPlus').style.display = S.mode === 'down' ? '' : 'none';
+  $('#btnLap').style.display = S.mode === 'up' ? '' : 'none';
+  $('#presets').style.display = $('#custom').style.display = S.mode === 'down' ? '' : 'none';
+  $('#laps').innerHTML = S.mode === 'up' ? laps.map((l, i) => `<li><span>${i + 1}. tur</span><span>${fmtUp(l - (laps[i - 1] || 0))}</span><span>${fmtUp(l)}</span></li>`).reverse().join('') : '';
+  if (!$('#timer').classList.contains('done')) $('#sub').textContent = S.mode === 'down' ? `${fmt(S.dur * 1000)} süre` : 'Kronometre';
+}
+
+function reset() {
+  running = false; cancelAnimationFrame(raf); alarmed = false; laps = [];
+  base = S.mode === 'down' ? S.dur * 1000 : 0;
+  $('#timer').classList.remove('done', 'warn', 'danger');
+  updateBtns(); draw();
+}
+function toggle() {
+  if (S.mode === 'down' && base <= 0) reset();
+  if (running) { base = now(); running = false; cancelAnimationFrame(raf); }
+  else { try { ac = ac || new AudioContext(); ac.resume(); } catch {} startedAt = performance.now(); running = true; raf = requestAnimationFrame(draw); }
+  $('#timer').classList.remove('done');
+  updateBtns(); draw();
+}
+function setDur(sec) { S.dur = Math.max(1, Math.min(180 * 60, sec)); save(); $('#mm').value = Math.floor(S.dur / 60); $('#ss').value = S.dur % 60; reset(); }
+
+$('#presets').innerHTML = PRESETS.map(m => `<button data-m="${m}">${m} dk</button>`).join('');
+$('#presets').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setDur(+b.dataset.m * 60); });
+$('#btnSet').onclick = () => setDur((+$('#mm').value || 0) * 60 + (+$('#ss').value || 0));
+$('#btnStart').onclick = toggle;
+$('#btnReset').onclick = reset;
+$('#btnPlus').onclick = () => { if (running) base += 60000; else base = Math.max(0, base) + 60000; if (base / 1000 > S.dur) S.dur = Math.ceil(base / 1000); $('#timer').classList.remove('done'); alarmed = false; draw(); updateBtns(); };
+$('#btnLap').onclick = () => { if (running) { laps.push(now()); updateBtns(); } };
+$('#btnSound').onclick = () => { S.sound = !S.sound; save(); updateBtns(); };
+$('#btnFull').onclick = () => { document.fullscreenElement ? document.exitFullscreen() : $('#timer').requestFullscreen?.(); };
+$('#label').value = S.label;
+$('#label').addEventListener('input', e => { S.label = e.target.value; save(); });
+$('#modeSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.mode = b.dataset.mode; save();
+  document.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x.dataset.mode === S.mode));
+  reset();
+});
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+  if (e.code === 'Space') { e.preventDefault(); toggle(); }
+  else if (e.key === 'r' || e.key === 'R') reset();
+  else if (e.key === 'f' || e.key === 'F') $('#btnFull').click();
+});
+
+$('#fg').style.strokeDasharray = CIRC;
+document.querySelectorAll('#modeSeg button').forEach(x => x.classList.toggle('on', x.dataset.mode === S.mode));
+$('#mm').value = Math.floor(S.dur / 60); $('#ss').value = S.dur % 60;
+reset();
+</script>
+</body>
+</html>

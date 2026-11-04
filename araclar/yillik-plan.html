@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yıllık Plan · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<script src="../assets/belirli-gunler.js"></script>
+<script src="../assets/vendor/xlsx.full.min.js"></script>
+<style>
+  .doc-layout{grid-template-columns:430px 1fr}
+  .unit{border:1.5px solid var(--line-2);border-left:5px solid var(--uc);border-radius:14px;padding:10px;background:var(--surface-2)}
+  .unit + .unit{margin-top:10px}
+  .unit-head{display:grid;grid-template-columns:1fr 78px auto;gap:6px;align-items:center}
+  .unit-head .input{padding:6px 8px}
+  .unit textarea{margin-top:6px;font-size:13px;min-height:70px}
+  .unit .extra{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px}
+  .unit .extra .input{padding:5px 7px;font-size:12.5px}
+  .unit .meta{display:flex;justify-content:space-between;align-items:center;margin-top:4px;font-size:12px;font-weight:800;color:var(--muted)}
+  .brk{display:grid;grid-template-columns:1fr 128px 128px 26px;gap:6px;align-items:center;margin-top:6px}
+  .brk .input{padding:6px 7px;font-size:13px}
+  .sum{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .warnline{padding:8px 10px;border-radius:10px;font-weight:800;font-size:13px}
+  .warnline.bad{background:var(--bad-soft);color:var(--bad)}
+  .warnline.ok{background:var(--ok-soft);color:var(--ok)}
+  .paper-stage td[data-w]{cursor:pointer}
+  .paper-stage td[data-w]:hover{outline:2px solid #fb923c;outline-offset:-2px}
+
+  /* Kâğıt */
+  .yp-head{text-align:center;margin-bottom:10px}
+  .yp-head .o{font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#555;font-size:12px}
+  .yp-head h1{margin:2px 0 4px;font-size:18px}
+  .yp{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
+  .yp th,.yp td{border:1px solid #888;padding:3px 4px;vertical-align:middle}
+  .yp th{background:#eee;font-size:10px}
+  .yp td.c{text-align:center}
+  .yp td.v{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-weight:800;white-space:nowrap}
+  .yp td.u{font-weight:800;background:color-mix(in srgb,var(--uc) 12%,#fff);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .yp td.k{white-space:pre-line}
+  .yp td.k.ov{background:#fffbe6}
+  .yp tr.yb td{background:#f3f3f3;text-align:center;font-weight:800;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .yp td.bg{font-size:9px;color:#333}
+  .yp tr{break-inside:avoid}
+  .yp-sign{display:flex;justify-content:space-between;gap:20px;margin-top:22px;break-inside:avoid;font-size:11px}
+  .yp-sign .t{display:flex;gap:24px;flex-wrap:wrap}
+  .yp-sign div.s{text-align:center;min-width:150px;font-weight:700}
+  .yp-sign .ln{border-bottom:1px dotted #444;height:28px;margin-bottom:3px}
+  @media print{.yp td.k.ov{background:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-layout">
+    <div class="panel" id="form">
+      <div class="psec"><h3 class="sec-title">📘 Ders bilgileri</h3><div class="stack">
+        <label class="field">Okul adı<input class="input" data-k="okul" placeholder="ör. Atatürk Ortaokulu"></label>
+        <div class="grid2">
+          <label class="field">Ders<input class="input" data-k="ders" placeholder="ör. Matematik"></label>
+          <label class="field">Sınıf / seviye<input class="input" data-k="sinif" placeholder="ör. 5. Sınıf"></label>
+          <label class="field">Haftalık ders saati<input class="input" type="number" min="1" max="12" data-k="hours"></label>
+          <label class="field">Eğitim-öğretim yılı<select class="input" data-k="year" id="year"></select></label>
+        </div>
+        <label class="field">Ders öğretmen(ler)i <span class="small">(virgülle ayırın)</span><input class="input" data-k="ogretmen" placeholder="ör. Ayşe Yılmaz, Mehmet Demir"></label>
+        <label class="field">Okul müdürü<input class="input" data-k="mudur"></label>
+      </div></div>
+
+      <div class="psec"><h3 class="sec-title">🗓️ Takvim <button class="btn sm" id="btnDefCal">↺ Varsayılan tarihler</button></h3><div class="stack">
+        <div class="grid2">
+          <label class="field">Okulların açılışı<input class="input" type="date" data-k="start"></label>
+          <label class="field">Son ders günü<input class="input" type="date" data-k="end"></label>
+        </div>
+        <div class="field">Tatiller (bu haftalarda ders yok)<div id="breaks"></div>
+          <button class="btn sm" id="btnAddBrk" style="margin-top:8px;align-self:flex-start">+ Tatil ekle</button></div>
+        <p class="small" style="margin:0">⚠️ Tarihler tahmini olarak gelir; MEB çalışma takvimine göre kontrol edip düzeltin.</p>
+      </div></div>
+
+      <div class="psec"><h3 class="sec-title">📚 Üniteler ve kazanımlar <span class="row"><button class="btn sm" id="btnSample">✨ Örnek</button><button class="btn sm" id="btnAuto" title="Haftaları kazanım sayısına göre orantılı dağıt">⚖️ Haftaları dağıt</button></span></h3>
+        <p class="small" style="margin:0 0 8px">Her üniteye kaç hafta ayrılacağını yazın ve kazanımları her satıra bir tane gelecek şekilde yapıştırın. Araç kazanımları ünitenin haftalarına sırayla dağıtır.</p>
+        <div id="sum"></div>
+        <div id="units"></div>
+        <button class="btn sm" id="btnAddUnit" style="margin-top:10px">+ Ünite ekle</button>
+      </div>
+
+      <div class="psec"><h3 class="sec-title">🧾 Tablo sütunları</h3>
+        <div class="checks" id="cols"></div>
+        <p class="small" style="margin:8px 0 0">Önizlemede bir haftanın kazanım ya da açıklama kutusuna tıklayarak o haftayı elle düzenleyebilirsiniz (sarı = elle değiştirildi).</p>
+      </div>
+    </div>
+
+    <div class="doc-preview">
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Yıllık plan</span><span class="row"><button class="btn" id="btnXls">📥 Excel</button><button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button></span></h2>
+        <div class="paper-stage" id="stage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🗂️', title: 'Yıllık Plan Oluşturucu',
+  help: {
+    key: 'yillik-plan', emoji: '🗂️', title: 'Bu bir yıllık plan oluşturma aracıdır',
+    intro: 'Ünite ve kazanımlarınızı eğitim-öğretim yılının haftalarına dağıtarak yazdırılabilir yıllık plan hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '📘', title: 'Ders bilgilerini girin', text: 'Ders, sınıf, haftalık ders saati ve öğretmen adlarını yazın.' },
+      { icon: '🗓️', title: 'Takvimi kontrol edin', text: 'Açılış, kapanış ve tatil tarihleri tahmini gelir; MEB çalışma takvimine göre düzeltin. Tatil haftalarına ders konmaz.' },
+      { icon: '📚', title: 'Üniteleri ve kazanımları yapıştırın', text: 'Her üniteye hafta sayısı verin, kazanımları satır satır yapıştırın. "Haftaları dağıt" kazanım sayısına göre otomatik hafta dağıtır.' },
+      { icon: '📅', title: 'Belirli gün ve haftalar otomatik', text: 'Her haftaya denk gelen belirli gün ve haftalar kendiliğinden yazılır (Belirli Gün ve Haftalar aracındaki tarihlerle).' },
+      { icon: '✏️', title: 'Haftayı elle düzenleyin', text: 'Önizlemede bir haftanın kazanım ya da açıklama kutusuna tıklayıp metni değiştirebilirsiniz.' },
+      { icon: '🖨️', title: 'Yazdırın ya da Excel\'e aktarın', text: 'İmza bölümüyle yatay A4 olarak yazdırın ya da Excel dosyası alın.' }
+    ]
+  }
+});
+
+const KEY = 'oa.yillikPlan';
+const $ = s => document.querySelector(s);
+const esc = OA.esc, G = OA.ozelGunler;
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899', '#84cc16', '#f97316', '#0ea5e9'];
+const COLS = { yontem: 'Yöntem ve teknikler', arac: 'Araç-gereçler', olcme: 'Ölçme-değerlendirme', bg: 'Belirli gün ve haftalar', aciklama: 'Açıklama' };
+const eduY = (() => { const d = new Date(); return d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; })();
+const iso = G.iso, add = G.add;
+const nthMon = (y, m, k) => { const f = new Date(y, m - 1, 1); return add(f, (8 - f.getDay()) % 7 + (k - 1) * 7); };
+// Tahmini tatiller: 1. ara tatil Kasım 2. hafta, yarıyıl Ocak 3. pazartesiden 2 hafta, 2. ara tatil Mart 3. hafta (MEB takviminden kontrol edilmeli)
+const defaultBreaks = Y => [
+  { name: '1. Dönem Ara Tatili', start: iso(nthMon(Y, 11, 2)), end: iso(add(nthMon(Y, 11, 2), 4)) },
+  { name: 'Yarıyıl Tatili', start: iso(nthMon(Y + 1, 1, 3)), end: iso(add(nthMon(Y + 1, 1, 3), 11)) },
+  { name: '2. Dönem Ara Tatili', start: iso(nthMon(Y + 1, 3, 3)), end: iso(add(nthMon(Y + 1, 3, 3), 4)) }
+];
+const calDefaults = Y => ({ start: G.schoolStart(Y), end: G.schoolEnd(Y), breaks: defaultBreaks(Y) });
+
+let S = {
+  okul: '', ders: '', sinif: '', hours: 4, ogretmen: '', mudur: '', year: eduY,
+  ...calDefaults(eduY), units: [], cols: { yontem: true, arac: false, olcme: true, bg: true, aciklama: true }, ov: {},
+  ...OA.store.get(KEY, {})
+};
+const save = () => OA.store.set(KEY, S);
+
+// ---------- Haftalar ----------
+function weeks() {
+  const out = [];
+  let mon = G.monday(new Date(S.start + 'T00:00'));
+  const end = new Date(S.end + 'T00:00');
+  for (let i = 0; mon <= end && i < 60; i++, mon = add(mon, 7)) {
+    const fri = add(mon, 4), a = iso(mon), b = iso(fri);
+    const brk = S.breaks.find(x => x.start && x.end && x.start <= b && x.end >= a);
+    out.push({ mon: a, fri: b, month: mon.getMonth(), brk });
+  }
+  return out;
+}
+const fmtD = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${G.MONTHS[d.getMonth()].slice(0, 3)}`; };
+
+// Ders haftalarına üniteleri ve kazanımları yerleştirir
+function plan() {
+  const W = weeks(), teach = W.filter(w => !w.brk);
+  // Belirli Gün ve Haftalar aracında eklenen/düzeltilen günler aynı yıl için buraya da yansır
+  const bgS = OA.store.get('oa.belirliGunler', null) || {}, sameYear = +bgS.year === +S.year;
+  const special = G.compute(S.year, { start: S.start, custom: sameYear ? bgS.custom || [] : [], edits: sameYear ? bgS.edits || {} : {} });
+  let wi = 0;
+  const rows = W.map(w => ({ ...w, bg: special.filter(it => it.start <= w.fri && it.end >= w.mon).map(it => it.ad) }));
+  const teachRows = rows.filter(r => !r.brk);
+  S.units.forEach((u, ui) => {
+    const n = Math.max(0, +u.weeks || 0), K = u.kaz.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    for (let k = 0; k < n && wi < teachRows.length; k++, wi++) {
+      const r = teachRows[wi];
+      r.unit = ui; r.uk = k;
+      if (!K.length) r.kaz = '';
+      // Kazanım hafta sayısından çoksa her haftaya birkaç kazanım düşer; azsa bir kazanım birkaç haftaya yayılır
+      else if (K.length >= n) r.kaz = K.slice(Math.floor(k * K.length / n), Math.floor((k + 1) * K.length / n)).join('\n');
+      else { const idx = Math.floor(k * K.length / n); r.kaz = K[idx] + (k > 0 && Math.floor((k - 1) * K.length / n) === idx ? ' (devam)' : ''); }
+    }
+  });
+  teachRows.forEach((r, i) => r.no = i + 1);
+  return { rows, teachCount: teach.length, used: Math.min(wi, teachRows.length), need: S.units.reduce((n, u) => n + (+u.weeks || 0), 0) };
+}
+
+// ---------- Form ----------
+function renderForm() {
+  $('#year').innerHTML = [-1, 0, 1].map(k => eduY + k).map(y => `<option value="${y}" ${+S.year === y ? 'selected' : ''}>${y}-${y + 1}</option>`).join('');
+  document.querySelectorAll('#form [data-k]').forEach(el => { if (document.activeElement !== el && el.id !== 'year') el.value = S[el.dataset.k] ?? ''; });
+  $('#breaks').innerHTML = S.breaks.map((b, i) => `<div class="brk"><input class="input" value="${esc(b.name)}" data-b="${i}" data-f="name"><input class="input" type="date" value="${b.start}" data-b="${i}" data-f="start"><input class="input" type="date" value="${b.end}" data-b="${i}" data-f="end"><button class="x" data-delb="${i}" title="Sil">✕</button></div>`).join('');
+  $('#units').innerHTML = S.units.map((u, i) => {
+    const K = u.kaz.split(/\r?\n/).filter(x => x.trim()).length;
+    return `<div class="unit" style="--uc:${COLORS[i % COLORS.length]}" data-u="${i}">
+      <div class="unit-head"><input class="input" value="${esc(u.name)}" data-f="name" placeholder="${i + 1}. Ünite adı">
+        <input class="input" type="number" min="0" max="40" value="${u.weeks}" data-f="weeks" title="Hafta sayısı">
+        <span class="row" style="gap:2px"><button class="x" data-move="-1" title="Yukarı">▲</button><button class="x" data-move="1" title="Aşağı">▼</button><button class="x" data-delu title="Sil">✕</button></span></div>
+      <textarea class="input" data-f="kaz" placeholder="Kazanımlar (her satıra bir kazanım)">${esc(u.kaz)}</textarea>
+      ${S.cols.yontem || S.cols.arac || S.cols.olcme ? `<div class="extra">
+        ${S.cols.yontem ? `<input class="input" value="${esc(u.yontem || '')}" data-f="yontem" placeholder="Yöntem-teknik">` : ''}
+        ${S.cols.arac ? `<input class="input" value="${esc(u.arac || '')}" data-f="arac" placeholder="Araç-gereç">` : ''}
+        ${S.cols.olcme ? `<input class="input" value="${esc(u.olcme || '')}" data-f="olcme" placeholder="Ölçme-değerlendirme">` : ''}
+      </div>` : ''}
+      <div class="meta"><span>${K} kazanım · ${u.weeks || 0} hafta · ${(u.weeks || 0) * S.hours} ders saati</span></div>
+    </div>`;
+  }).join('') || '<div class="small">Henüz ünite yok. "+ Ünite ekle" ya da "✨ Örnek" ile başlayın.</div>';
+  $('#cols').innerHTML = Object.entries(COLS).map(([k, l]) => `<label><input type="checkbox" data-col="${k}" ${S.cols[k] ? 'checked' : ''}> ${l}</label>`).join('');
+  renderSum();
+}
+function renderSum() {
+  const p = plan();
+  const diff = p.teachCount - p.need;
+  $('#sum').innerHTML = `<div class="sum"><span class="chip info">${p.teachCount} ders haftası</span><span class="chip">${p.teachCount * S.hours} ders saati</span><span class="chip ${diff < 0 ? 'bad' : diff ? 'warn' : 'ok'}">Ünitelere ayrılan: ${p.need} hafta</span></div>
+    ${diff < 0 ? `<div class="warnline bad">⚠️ Ünitelere ayrılan süre ${-diff} hafta fazla; son haftalar plana sığmıyor.</div>` : diff > 0 && S.units.length ? `<div class="warnline ok">ℹ️ ${diff} hafta boş kalıyor (yıl sonu tekrarı için kullanılabilir) ya da "Haftaları dağıt"a basın.</div>` : ''}`;
+}
+
+// ---------- Kâğıt ----------
+function paperHTML() {
+  const p = plan(), C = S.cols;
+  const extraCols = Object.keys(COLS).filter(k => C[k]);
+  const nCols = 4 + 1 + extraCols.length; // ay, hafta, saat, ünite, kazanım + seçmeli
+  const head = `<tr><th style="width:26px">Ay</th><th style="width:74px">Hafta</th><th style="width:30px">Saat</th><th style="width:13%">Ünite</th><th>Kazanımlar / Konular</th>${extraCols.map(k => `<th style="width:${k === 'bg' ? 13 : 11}%">${COLS[k]}</th>`).join('')}</tr>`;
+  // Ay ve ünite hücreleri birleştirilir (rowspan)
+  const rows = p.rows;
+  const monthSpan = i => { let n = 1; while (i + n < rows.length && rows[i + n].month === rows[i].month && !rows[i + n].brk && !rows[i].brk) n++; return n; };
+  const unitSpan = i => { let n = 1; while (i + n < rows.length && !rows[i + n].brk && rows[i + n].unit === rows[i].unit) n++; return n; };
+  let body = '', skipM = 0, skipU = 0;
+  rows.forEach((r, i) => {
+    if (r.brk) {
+      if (i > 0 && rows[i - 1].brk === r.brk) return; // birden çok haftalık tatil tek satır
+      body += `<tr class="yb"><td colspan="${nCols}">${esc(r.brk.name)} (${fmtD(r.brk.start)} – ${fmtD(r.brk.end)})</td></tr>`;
+      skipM = 0; skipU = 0; return;
+    }
+    const ov = S.ov[r.mon] || {};
+    let tr = '<tr>';
+    if (skipM-- <= 0) { const n = monthSpan(i); skipM = n - 1; tr += `<td class="v" rowspan="${n}">${G.MONTHS[r.month].toLocaleUpperCase('tr')}</td>`; }
+    tr += `<td class="c"><b>${r.no}.</b><br>${fmtD(r.mon)}–${fmtD(r.fri)}</td><td class="c">${S.hours}</td>`;
+    if (skipU-- <= 0) {
+      const n = unitSpan(i); skipU = n - 1;
+      const u = S.units[r.unit];
+      tr += u ? `<td class="u" rowspan="${n}" style="--uc:${COLORS[r.unit % COLORS.length]}">${esc(u.name || `${r.unit + 1}. Ünite`)}</td>` : `<td rowspan="${n}"></td>`;
+    }
+    const kaz = ov.kaz != null ? ov.kaz : (r.kaz || (r.unit == null ? 'Genel tekrar' : ''));
+    tr += `<td class="k ${ov.kaz != null ? 'ov' : ''}" data-w="${r.mon}" data-f="kaz">${esc(kaz)}</td>`;
+    const u = S.units[r.unit] || {};
+    for (const k of extraCols) {
+      if (k === 'bg') tr += `<td class="bg">${esc(r.bg.join(', '))}</td>`;
+      else if (k === 'aciklama') tr += `<td class="k ${ov.not != null ? 'ov' : ''}" data-w="${r.mon}" data-f="not">${esc(ov.not || '')}</td>`;
+      else tr += `<td>${esc(u[k] || '')}</td>`;
+    }
+    body += tr + '</tr>';
+  });
+  const teachers = S.ogretmen.split(',').map(x => x.trim()).filter(Boolean);
+  return `<div class="paper land">
+    <div class="yp-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${S.year}-${+S.year + 1} Eğitim-Öğretim Yılı ${esc(S.sinif)} ${esc(S.ders)} Dersi Ünitelendirilmiş Yıllık Planı</h1></div>
+    <table class="yp"><thead>${head}</thead><tbody>${body}</tbody></table>
+    <div class="yp-sign">
+      <div class="t">${(teachers.length ? teachers : ['']).map(t => `<div class="s"><div class="ln"></div>${esc(t) || '&nbsp;'}<br><small>${esc(S.ders)} Öğretmeni</small></div>`).join('')}</div>
+      <div class="s">UYGUNDUR<br>…/…/${+S.year}<div class="ln"></div>${esc(S.mudur) || '&nbsp;'}<br><small>Okul Müdürü</small></div>
+    </div></div>`;
+}
+function renderPaper() { OA.renderPaper($('#stage'), paperHTML(), { orient: 'landscape', margin: '8mm' }); }
+function renderAll() { renderForm(); renderPaper(); }
+
+// ---------- Olaylar ----------
+const form = $('#form');
+form.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.k) { S[t.dataset.k] = t.type === 'number' ? Math.max(1, +t.value || 1) : t.value; if (t.dataset.k === 'year') { S.year = +t.value; Object.assign(S, calDefaults(S.year)); save(); renderAll(); return; } }
+  else if (t.dataset.b != null) S.breaks[+t.dataset.b][t.dataset.f] = t.value;
+  else if (t.dataset.col) { S.cols[t.dataset.col] = t.checked; save(); renderAll(); return; }
+  else if (t.closest('[data-u]') && t.dataset.f) { const u = S.units[+t.closest('[data-u]').dataset.u]; u[t.dataset.f] = t.dataset.f === 'weeks' ? Math.max(0, +t.value || 0) : t.value; }
+  else return;
+  save(); renderSum(); renderPaper();
+});
+form.addEventListener('change', e => { if (e.target.dataset.f === 'weeks' || e.target.dataset.f === 'kaz' || e.target.type === 'number' || e.target.type === 'date') renderForm(); });
+form.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const uEl = b.closest('[data-u]'), ui = uEl ? +uEl.dataset.u : -1;
+  if (b.dataset.delu != null) { if (!confirm('Bu ünite silinsin mi?')) return; S.units.splice(ui, 1); }
+  else if (b.dataset.move) { const j = ui + +b.dataset.move; if (j < 0 || j >= S.units.length) return; [S.units[ui], S.units[j]] = [S.units[j], S.units[ui]]; }
+  else if (b.dataset.delb != null) S.breaks.splice(+b.dataset.delb, 1);
+  else if (b.id === 'btnAddBrk') S.breaks.push({ name: 'Tatil', start: '', end: '' });
+  else if (b.id === 'btnAddUnit') S.units.push({ name: '', weeks: 4, kaz: '', yontem: '', arac: '', olcme: '' });
+  else if (b.id === 'btnDefCal') { if (!confirm('Açılış, kapanış ve tatil tarihleri varsayılana dönsün mü?')) return; Object.assign(S, calDefaults(S.year)); }
+  else if (b.id === 'btnAuto') {
+    // Ders haftaları ünitelerin kazanım sayısıyla orantılı dağıtılır (her üniteye en az 1 hafta)
+    const total = plan().teachCount, Ks = S.units.map(u => Math.max(1, u.kaz.split(/\r?\n/).filter(x => x.trim()).length));
+    if (!S.units.length) return OA.toast('Önce ünite ekleyin');
+    const sum = Ks.reduce((a, b) => a + b, 0);
+    let ws = Ks.map(k => Math.max(1, Math.floor(total * k / sum)));
+    let rest = total - ws.reduce((a, b) => a + b, 0);
+    const order = Ks.map((k, i) => [total * k / sum - Math.floor(total * k / sum), i]).sort((a, b) => b[0] - a[0]);
+    for (let i = 0; rest > 0; i = (i + 1) % order.length, rest--) ws[order[i][1]]++;
+    S.units.forEach((u, i) => u.weeks = ws[i]);
+    OA.toast(`${total} ders haftası ünitelere dağıtıldı`);
+  }
+  else if (b.id === 'btnSample') {
+    if (S.units.length && !confirm('Mevcut üniteler örnekle değiştirilsin mi?')) return;
+    Object.assign(S, { ders: S.ders || 'Matematik', sinif: S.sinif || '5. Sınıf', hours: 5 });
+    S.units = [
+      { name: '1. Ünite: Doğal Sayılar', kaz: 'Milyonlu sayıları okur ve yazar.\nBölükleri ve basamakları belirtir.\nSayı örüntülerini tanır ve genişletir.\nDoğal sayıları karşılaştırır ve sıralar.', yontem: 'Anlatım, soru-cevap', olcme: 'Gözlem, kısa sınav' },
+      { name: '2. Ünite: Doğal Sayılarla İşlemler', kaz: 'Toplama ve çıkarma işlemlerini yapar.\nÇarpma ve bölme işlemlerini yapar.\nİşlem önceliğini kullanır.\nZihinden işlem stratejileri geliştirir.\nProblem çözer ve kurar.', yontem: 'Problem çözme, gösterip yaptırma', olcme: 'Çalışma kâğıdı' },
+      { name: '3. Ünite: Kesirler', kaz: 'Birim kesirleri sıralar.\nBileşik kesri tam sayılı kesre dönüştürür.\nDenk kesirler oluşturur.\nKesirlerle toplama ve çıkarma yapar.', yontem: 'Modellerle öğretim', olcme: 'Performans görevi' },
+      { name: '4. Ünite: Ondalık Gösterim ve Yüzdeler', kaz: 'Ondalık gösterimleri okur ve yazar.\nOndalık gösterimleri sıralar.\nYüzdeyi kesir ve ondalık gösterimle ilişkilendirir.', yontem: 'Tartışma, örnek olay', olcme: 'Kısa sınav' },
+      { name: '5. Ünite: Temel Geometrik Kavramlar', kaz: 'Doğru, ışın ve doğru parçasını tanır.\nAçıları ölçer ve çizer.\nÜçgen ve dörtgenleri tanır ve sınıflandırır.\nÇevre ve alan hesaplar.', yontem: 'Somut materyal, etkinlik', olcme: 'Proje, gözlem' },
+      { name: '6. Ünite: Veri İşleme', kaz: 'Veri toplar ve tabloda düzenler.\nSütun grafiği oluşturur ve yorumlar.', yontem: 'Araştırma, grup çalışması', olcme: 'Rubrik' }
+    ];
+    setTimeout(() => $('#btnAuto').click(), 0);
+  }
+  else return;
+  save(); renderAll();
+});
+
+// Önizlemede haftaya tıklayınca o haftanın metni elle düzenlenir
+$('#stage').addEventListener('click', e => {
+  const td = e.target.closest('td[data-w]'); if (!td) return;
+  const w = td.dataset.w, f = td.dataset.f, cur = S.ov[w]?.[f];
+  const auto = f === 'kaz' ? (plan().rows.find(r => r.mon === w)?.kaz || '') : '';
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">✏️</div><div><div class="eyebrow">${fmtD(w)} haftası</div><h2>${f === 'kaz' ? 'Kazanımlar / konular' : 'Açıklama'}</h2></div></div>
+    <textarea class="input" rows="7">${esc(cur != null ? cur : auto)}</textarea>
+    <div class="modal-foot" style="margin-top:14px">${cur != null ? '<button class="btn" data-reset>↺ Otomatiğe dön</button>' : '<span></span>'}<span class="row"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Kaydet</button></span></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('textarea').focus();
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-reset]')?.addEventListener('click', () => { delete S.ov[w][f]; save(); wrap.remove(); renderPaper(); });
+  wrap.querySelector('[data-ok]').onclick = () => { S.ov[w] = S.ov[w] || {}; S.ov[w][f] = wrap.querySelector('textarea').value; save(); wrap.remove(); renderPaper(); };
+});
+
+$('#btnPrint').onclick = () => { renderPaper(); window.print(); };
+$('#btnXls').onclick = () => {
+  if (typeof XLSX === 'undefined') return OA.toast('Excel aracı yüklenemedi, internet bağlantınızı kontrol edin');
+  const p = plan(), extra = Object.keys(COLS).filter(k => S.cols[k]);
+  const aoa = [['Ay', 'Hafta', 'Tarih', 'Saat', 'Ünite', 'Kazanımlar / Konular', ...extra.map(k => COLS[k])]];
+  for (const r of p.rows) {
+    if (r.brk) { aoa.push([G.MONTHS[r.month], '', `${fmtD(r.mon)} – ${fmtD(r.fri)}`, '', r.brk.name]); continue; }
+    const ov = S.ov[r.mon] || {}, u = S.units[r.unit] || {};
+    aoa.push([G.MONTHS[r.month], r.no, `${fmtD(r.mon)} – ${fmtD(r.fri)}`, S.hours, u.name || '', ov.kaz != null ? ov.kaz : (r.kaz || 'Genel tekrar'),
+      ...extra.map(k => k === 'bg' ? r.bg.join(', ') : k === 'aciklama' ? (ov.not || '') : (u[k] || ''))]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch: 9 }, { wch: 6 }, { wch: 16 }, { wch: 5 }, { wch: 28 }, { wch: 60 }, ...extra.map(() => ({ wch: 24 }))];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'Yıllık Plan');
+  XLSX.writeFile(wb, `yillik-plan-${(S.ders || 'ders').replace(/\s+/g, '-')}-${S.year}.xlsx`);
+};
+
+renderAll();
+</script>
+</body>
+</html>

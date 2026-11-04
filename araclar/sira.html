@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sınıf Oturma Düzeni · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<script src="../assets/vendor/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --seat-bg:linear-gradient(#fff3e6,#ffe1c2); --seat-b:#fdba74;
+    --talk:#f59e0b; --lock-bg:linear-gradient(#d5f7ef,#a7ecdc); --lock-b:#0d9488;
+    --off:#f1e6da; --off-2:#faf4ee; --desk-line:#5b4335;
+    --wood:linear-gradient(#e7b57d,#c98a4b); --wood-edge:#9a6232;
+    --floor:#fbf3ea; --floor-line:#f2e3d2; --wall:#e9d3bd; --chair:#b6a597;
+    --board:#2f5a43;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --seat-bg:linear-gradient(#4a2d19,#3b2213); --seat-b:#9a5a26;
+      --lock-bg:linear-gradient(#113f39,#0b2f2a); --lock-b:#2dd4bf;
+      --off:#2f2219; --off-2:#271c15; --desk-line:#a88b75;
+      --wood:linear-gradient(#8a5a31,#6d4321); --wood-edge:#4a2c13;
+      --floor:#211812; --floor-line:#2a1f17; --wall:#3d2c20; --chair:#5f5047;
+      --board:#24493a;
+    }
+  }
+  :root[data-theme="dark"]{
+    --seat-bg:linear-gradient(#4a2d19,#3b2213); --seat-b:#9a5a26;
+    --lock-bg:linear-gradient(#113f39,#0b2f2a); --lock-b:#2dd4bf;
+    --off:#2f2219; --off-2:#271c15; --desk-line:#a88b75;
+    --wood:linear-gradient(#8a5a31,#6d4321); --wood-edge:#4a2c13;
+    --floor:#211812; --floor-line:#2a1f17; --wall:#3d2c20; --chair:#5f5047;
+    --board:#24493a;
+  }
+
+  /* ---------- Araç çubuğu ---------- */
+  .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;margin-bottom:16px}
+  .tb-group{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tb-group label{display:inline-flex;align-items:center;gap:6px;font-weight:800;color:var(--muted);font-size:13.5px}
+  .tb-label{font-weight:900;font-size:13px;color:var(--brand-ink);background:var(--brand-soft);padding:4px 10px;border-radius:999px}
+
+  main.sira{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+  .side{display:flex;flex-direction:column;gap:16px}
+
+  #drop{border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;color:var(--muted);cursor:pointer;background:var(--surface-2);transition:.15s;font-weight:600}
+  #drop:hover,#drop.over{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+  #drop b{color:var(--text);font-weight:900}
+  #drop .big{font-size:28px;display:block;margin-bottom:4px}
+
+  #list{max-height:44vh;overflow:auto;margin-top:10px;border-top:1.5px solid var(--line-2)}
+  .stu{display:flex;align-items:center;gap:6px;padding:6px 2px;border-bottom:1px solid var(--line-2)}
+  .stu .nm{flex:1;cursor:grab;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+  .stu .dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+  .stu .dot.on{background:var(--ok)}
+  .tog{border:1.5px solid var(--line);border-radius:8px;padding:1px 6px;font-size:13px;cursor:pointer;user-select:none;background:var(--surface);opacity:.4}
+  .tog.on{opacity:1}
+  .tog.t.on{background:var(--warn-soft);border-color:var(--talk)}
+  .tog.f.on{background:var(--ok-soft);border-color:var(--ok)}
+  #pairs .pair{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--line-2);font-weight:700;font-size:13.5px}
+  #warn{padding-left:18px;margin:6px 0 0;color:var(--bad);font-weight:700;font-size:13.5px}
+  #warn li{margin:3px 0}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .stat{background:var(--surface-2);border:1.5px solid var(--line-2);border-radius:12px;padding:8px 10px}
+  .stat b{display:block;font-size:20px;font-weight:900}
+  .stat span{font-size:12px;color:var(--muted);font-weight:700}
+  .okline{margin-top:8px;color:var(--ok);font-weight:800}
+
+  /* ---------- Sınıf (ortak) ---------- */
+  .roomwrap{overflow:auto}
+  .classroom{position:relative;min-width:max-content;margin:0 auto}
+  .front{display:flex;justify-content:center;align-items:flex-end;gap:24px;margin-bottom:18px}
+  .board{width:min(60%,520px);min-width:220px;text-align:center;background:var(--board);color:#fff;border-radius:8px;padding:9px;letter-spacing:5px;font-weight:900;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .tdesk,.windows,.door{display:none}
+  #room{display:flex;gap:44px;justify-content:center;min-width:max-content;padding-bottom:8px}
+  .group{display:flex;flex-direction:column}
+  .gtitle{text-align:center;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:6px}
+  .desk{display:flex}
+  .seat{position:relative;display:flex;align-items:center}
+  .card{cursor:grab;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .card .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .seat .acts{position:absolute;top:-10px;right:2px;display:none;gap:2px;z-index:3}
+  .seat:hover .acts{display:flex}
+  .acts span{background:var(--surface);border:1.5px solid var(--line);border-radius:7px;font-size:11px;padding:0 4px;cursor:pointer}
+  .acts span:hover{border-color:var(--brand)}
+  .seat.empty,.seat.disabled{cursor:pointer}
+  .seat.over{outline:3px solid var(--brand);outline-offset:-3px;border-radius:6px}
+  .rowlbl{position:absolute;left:-26px;color:var(--muted);font-size:11px;font-weight:800}
+
+  /* ---------- Basit görünüm ---------- */
+  .simple .desk{border:1.5px solid var(--desk-line);border-top:none;background:var(--surface)}
+  .simple .group .desk:first-of-type{border-top:1.5px solid var(--desk-line)}
+  .simple .seat{width:140px;height:44px;padding:4px;border-right:1.5px solid var(--desk-line)}
+  .simple .seat:last-child{border-right:none}
+  .simple .card{width:100%;height:100%;display:flex;align-items:center;gap:4px;padding:0 8px;border-radius:4px;background:var(--seat-bg);border:1px solid var(--seat-b);font-weight:800;font-size:12.5px;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .simple .card .n{flex:1}
+  .simple .card .ic{font-size:11px}
+  .simple .card.talk{border:2px solid var(--talk)}
+  .simple .card.conflict{border:2px solid var(--bad);box-shadow:0 0 0 2px color-mix(in srgb,var(--bad) 25%,transparent)}
+  .simple .seat.locked .card{background:var(--lock-bg);border-color:var(--lock-b)}
+  .simple .seat.disabled{background:repeating-linear-gradient(45deg,var(--off) 0 6px,var(--off-2) 6px 12px)}
+
+  /* ---------- Gelişmiş görünüm ---------- */
+  .adv .classroom{
+    background:repeating-linear-gradient(90deg,var(--floor) 0 64px,var(--floor-line) 64px 66px);
+    border:12px solid var(--wall);border-radius:22px;padding:22px 34px 46px 52px;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .adv .front{gap:40px;margin-bottom:30px}
+  .adv .board{padding:14px;font-size:15px;border:7px solid #8b5a2b;border-radius:10px;box-shadow:0 6px 0 rgba(0,0,0,.12);position:relative}
+  .adv .board::after{content:"";position:absolute;left:12%;right:12%;bottom:-13px;height:5px;border-radius:3px;background:#8b5a2b}
+  .adv .tdesk{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:800;color:var(--muted)}
+  .adv .tdesk i{display:grid;place-items:center;width:110px;height:46px;border-radius:10px;background:var(--wood);box-shadow:0 4px 0 var(--wood-edge);font-style:normal;font-size:22px}
+  .desk-ctl{display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .adv .desk-ctl{display:flex}
+  .adv.td-left .tdesk{order:-1}
+  .adv.td-none .tdesk{display:none}
+  .adv .windows{display:flex;flex-direction:column;justify-content:space-around;position:absolute;left:-12px;top:70px;bottom:70px;width:12px}
+  .adv .windows span{display:block;height:64px;background:linear-gradient(#bfdbfe,#93c5fd);border-radius:2px}
+  .adv .windows::before{content:"Pencere";position:absolute;left:18px;top:-24px;font-size:11px;font-weight:800;color:var(--muted)}
+  .adv .door{display:block;position:absolute;right:40px;bottom:-12px;width:84px;height:12px;background:var(--surface);border-left:4px solid #92400e}
+  .adv .door::before{content:"🚪 Kapı";position:absolute;right:0;top:-26px;font-size:12px;font-weight:800;color:var(--muted);white-space:nowrap}
+  .adv #room{gap:56px}
+  .adv .gtitle{margin-bottom:10px}
+  .adv .desk{position:relative;margin-bottom:16px}
+  .adv .desk::before{content:"";position:absolute;left:4px;right:4px;top:0;height:30px;border-radius:8px;background:var(--wood);box-shadow:0 4px 0 var(--wood-edge);z-index:0}
+  .adv .seat{width:104px;height:96px;flex-direction:column;justify-content:flex-start;padding-top:16px;z-index:1}
+  .adv .seat::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:56px;height:14px;border-radius:9px 9px 4px 4px;background:var(--chair);z-index:-1}
+  .adv .card{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%}
+  .adv .av{
+    position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:14px;
+    background:hsl(var(--h) 70% 55%);border:3px solid var(--surface);box-shadow:0 3px 6px rgba(0,0,0,.2);
+  }
+  .adv .card .n{max-width:98px;font-size:11.5px;font-weight:900;background:var(--surface);border:1.5px solid var(--line);border-radius:7px;padding:0 6px}
+  .adv .badges{position:absolute;top:-6px;right:-14px;display:flex;gap:1px;font-size:11px}
+  .adv .card.talk .av{box-shadow:0 0 0 3px var(--talk)}
+  .adv .seat.locked .av{box-shadow:0 0 0 3px var(--lock-b)}
+  .adv .card.conflict .av{box-shadow:0 0 0 3px var(--bad);animation:pulse 1.4s infinite}
+  .adv .card.conflict .n{border-color:var(--bad);color:var(--bad)}
+  @keyframes pulse{50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--bad) 25%,transparent)}}
+  .adv .empty-chair,.adv .off-chair{margin-top:12px;font-size:11px;font-weight:800;color:var(--muted);border:2px dashed var(--line);border-radius:50%;width:36px;height:36px;display:grid;place-items:center}
+  .adv .off-chair{border-style:solid;background:var(--off);color:var(--bad)}
+  .adv .seat.disabled::after{opacity:.35}
+  .adv .rowlbl{left:-30px;top:30px}
+
+  /* İşaretler gizliyken: ayrı oturmalı / ön sıra işaretleri, uyarılar ve ikili listesi görünmez (çıktıda da) */
+  .marks-off .tog,.marks-off .acts [data-act="talk"],.marks-off .lg-mark,.marks-off #pairsPanel,.marks-off #warn,.marks-off .st-talk,.marks-off .okline,.marks-off .card .ic,.marks-off .badges,.marks-off .mark-hint{display:none!important}
+  .marks-off .simple .card.talk,.marks-off .simple .card.conflict{border:1px solid var(--seat-b)!important;box-shadow:0 1px 2px rgba(0,0,0,.15)!important}
+  .marks-off .adv .card .av{box-shadow:0 3px 6px rgba(0,0,0,.2)!important;animation:none!important}
+  .marks-off .adv .card.conflict .n{border-color:var(--line)!important;color:inherit!important}
+  #btnHide.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand-ink)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;color:var(--muted);font-size:12.5px;font-weight:700;justify-content:center}
+  .legend i{display:inline-block;width:14px;height:12px;border-radius:3px;margin-right:5px;vertical-align:middle;background:var(--seat-bg)}
+
+  @media (max-width:960px){main.sira{grid-template-columns:1fr}}
+  @page{size:A4 landscape;margin:10mm}
+  @media print{
+    .toolbar,.side,.legend,.acts,.hint{display:none!important}
+    main.sira{display:block}
+    .page{padding:0;max-width:none}
+    .panel{border:none;padding:0;box-shadow:none}
+    .roomwrap{overflow:visible}
+    /* --pz yazdırmadan hemen önce hesaplanır: sınıf tek sayfaya sığacak kadar küçülür */
+    .classroom{zoom:var(--pz,1)}
+    .simple .seat.disabled{background:#fff}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="panel toolbar">
+    <div class="tb-group">
+      <span class="tb-label">🏫 Sınıf düzeni</span>
+      <label title="Yan yana kaç sıra sütunu var">Grup <input class="input num" type="number" id="lg" min="1" max="6"></label>
+      <label title="Her grupta önden arkaya kaç sıra var">Sıra <input class="input num" type="number" id="lr" min="1" max="15"></label>
+      <label title="Bir sırada kaç öğrenci oturuyor">Sırada kişi <input class="input num" type="number" id="lp" min="1" max="4"></label>
+    </div>
+    <div class="seg" id="viewSeg" role="tablist" aria-label="Görünüm">
+      <button data-view="simple">▦ Basit</button>
+      <button data-view="adv">🏫 Gelişmiş</button>
+    </div>
+    <span class="spacer"></span>
+    <button class="btn" id="btnHide" title="Sınıfa yansıtırken ayrı oturmalı / ön sıra işaretlerini tek tıkla gizle">🙈 İşaretleri gizle</button>
+    <button class="btn primary" id="btnPlace" title="Kurallara uyarak öğrencileri otomatik yerleştirir">✨ Otomatik Yerleştir</button>
+    <button class="btn" id="btnClear">🧹 Boşalt</button>
+    <button class="btn" id="btnExport">📥 Excel</button>
+    <button class="btn" id="btnPrint">🖨️ Yazdır</button>
+  </div>
+
+  <main class="sira">
+    <div class="side">
+      <div class="panel">
+        <h2><span><span class="h-ic">📋</span> Öğrenci Listesi</span> <span class="chip" id="count"></span></h2>
+        <div id="drop"><span class="big">📂</span><b>Excel dosyasını buraya sürükleyin</b><br>ya da tıklayıp seçin (.xlsx, .xls, .csv)</div>
+        <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden>
+        <div class="small" style="margin-top:8px">Sütunlar: <b>Ad Soyad</b>, <b>Ayrı Oturmalı</b> (Evet/X), isteğe bağlı <b>Ön Sıra</b>, <b>Ayrı Tut</b>.
+          <a href="#" id="tpl">Örnek şablonu indir</a></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm" id="btnFromCls" title="Sınıflarım'daki bir sınıfı yükle">📚 Sınıflarımdan yükle</button>
+          <button class="btn sm" id="btnToCls" title="Bu listeyi diğer araçlarda kullanmak için kaydet">💾 Sınıflarıma kaydet</button>
+        </div>
+        <div class="row" style="margin-top:12px;flex-wrap:nowrap">
+          <input class="input" type="text" id="newName" placeholder="Öğrenci adı yazın…">
+          <button class="btn" id="btnAdd">Ekle</button>
+        </div>
+        <input class="input" type="text" id="search" placeholder="🔎 Listede ara…" style="margin-top:8px">
+        <div class="small" style="margin-top:8px"><span class="mark-hint">🔹 ayrı oturmalı · 👓 ön sırada olmalı · </span>İsmi sınıftaki bir koltuğa sürükleyebilirsiniz.</div>
+        <div id="list"></div>
+      </div>
+
+      <div class="panel" id="pairsPanel">
+        <h2><span><span class="h-ic">↔️</span> Yan yana oturmasın</span></h2>
+        <div class="small">🔹 işaretli öğrenciler zaten birbirinden uzak oturtulur. Ayrıca yan yana oturmaması gereken ikilileri buraya ekleyin.</div>
+        <div class="row" style="margin-top:10px;flex-wrap:nowrap">
+          <select class="input" id="pa"></select>
+          <select class="input" id="pb"></select>
+          <button class="btn" id="btnPair" title="İkiliyi ekle">+</button>
+        </div>
+        <div id="pairs" style="margin-top:8px"></div>
+      </div>
+
+      <div class="panel">
+        <h2><span><span class="h-ic">📈</span> Durum</span></h2>
+        <div id="status"></div>
+        <ul id="warn"></ul>
+      </div>
+    </div>
+
+    <div class="panel roomwrap simple" id="roomwrap">
+      <div class="hint" id="emptyHint">👈 Başlamak için soldan öğrenci listesini yükleyin ya da isim ekleyin.</div>
+      <div class="desk-ctl no-print">
+        <span class="small" style="font-weight:800">🧑‍🏫 Öğretmen masası:</span>
+        <div class="seg" id="tdeskSeg">
+          <button data-td="left">◧ Tahtanın solu</button>
+          <button data-td="right">Tahtanın sağı ◨</button>
+          <button data-td="none">Gösterme</button>
+        </div>
+      </div>
+      <div class="classroom">
+        <div class="windows"><span></span><span></span><span></span></div>
+        <div class="front">
+          <div class="board">TAHTA</div>
+          <div class="tdesk"><i>📚</i>Öğretmen Masası</div>
+        </div>
+        <div id="room"></div>
+        <div class="door"></div>
+      </div>
+      <div class="legend">
+        <span><i style="border:1px solid var(--seat-b)"></i>Öğrenci</span>
+        <span class="lg-mark"><i style="border:2px solid var(--talk)"></i>Ayrı oturmalı</span>
+        <span class="lg-mark"><i style="border:2px solid var(--bad)"></i>Yakın oturan (ayrı oturmalı)</span>
+        <span><i style="background:var(--lock-bg);border:1px solid var(--lock-b)"></i>Kilitli (yeri sabit)</span>
+        <span><i style="background:repeating-linear-gradient(45deg,var(--off) 0 3px,var(--off-2) 3px 6px);border:1px solid var(--line)"></i>Kapalı koltuk (boş koltuğa tıklayın)</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🪑', title: 'Sınıf Oturma Düzeni',
+  help: {
+    key: 'sira', emoji: '🪑', title: 'Bu bir sınıf oturma düzeni aracıdır',
+    intro: 'Öğrencilerinizi belirlediğiniz kurallara göre sınıftaki sıralara otomatik yerleştirir. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '📋', title: 'Öğrenci listesini yükleyin', text: 'Excel dosyanızı sol taraftaki alana sürükleyin ya da isimleri tek tek yazıp ekleyin. Hazır şablonu da indirebilirsiniz.' },
+      { icon: '🏫', title: 'Sınıf düzenini girin', text: 'Üstten grup (sıra sütunu), sıra sayısını ve bir sırada kaç kişi oturduğunu ayarlayın. Kullanılmayan boş koltuğa tıklayarak kapatabilirsiniz.' },
+      { icon: '🔹', title: 'Kuralları belirleyin', text: 'Birbirinden ayrı oturması iyi olan (🔹) ve ön sırada oturması gereken (👓) öğrencileri işaretleyin; yan yana oturmaması gereken ikilileri ekleyin.' },
+      { icon: '🙈', title: 'Sınıfa yansıtırken gizleyin', text: '"İşaretleri gizle" düğmesine bir kez basınca tüm işaretler ve uyarılar ekrandan ve çıktıdan kalkar; tekrar basınca geri gelir.' },
+      { icon: '✨', title: '"Otomatik Yerleştir"e basın', text: 'Araç kurallara uyarak yerleştirir. Sonra isimleri sürükleyerek yer değiştirebilir, 🔒 ile bir öğrencinin yerini sabitleyebilirsiniz.' },
+      { icon: '🏫', title: 'Basit ya da Gelişmiş görünüm', text: 'Basit görünüm sade bir tablo gösterir. Gelişmiş görünüm sınıfı tahta, öğretmen masası, pencere ve kapıyla birlikte çizer; öğretmen masasını tahtanın soluna ya da sağına alabilirsiniz.' },
+      { icon: '🖨️', title: 'Yazdırın ya da Excel\'e aktarın', text: 'Hazır oturma planını kâğıda dökün ya da Excel dosyası olarak kaydedin. Her şey bu cihazda otomatik saklanır.' }
+    ]
+  }
+});
+
+const $ = s => document.querySelector(s);
+const KEY = 'siraAyarlama.v1';
+const up = s => String(s ?? '').trim().replace(/\s+/g, ' ').toLocaleUpperCase('tr');
+const esc = OA.esc, toast = OA.toast;
+
+let S = OA.store.get(KEY, null) || {
+  students: [], pairs: [],
+  layout: { groups: 3, rows: 9, per: 2 },
+  disabled: {}, assign: {}, locked: {}
+};
+S.view = S.view || 'simple';
+S.tdesk = S.tdesk || 'right';
+
+function save() { OA.store.set(KEY, S); }
+let uidN = 0;
+const uid = () => 's' + Date.now().toString(36) + (uidN++);
+const byId = () => Object.fromEntries(S.students.map(s => [s.id, s]));
+const k = (g, r, s) => `${g}-${r}-${s}`;
+const parseKey = key => { const [g, r, s] = key.split('-').map(Number); return { g, r, s }; };
+
+// ---------- Excel okuma ----------
+const truthy = v => /^(e|evet|x|1|var|true|✓|✔|\+|konuşkan|ayrı|yes)/i.test(String(v ?? '').trim());
+
+const HEAD = /^\s*(ad[ıi]?)(\s|$)|soyad|isim|öğrenci|ogrenci|^\s*name/i;
+
+function importRows(rows) {
+  rows = rows.filter(r => r.some(c => String(c).trim() !== ''));
+  if (!rows.length) return toast('Dosyada veri bulunamadı');
+  let hi = rows.slice(0, 5).findIndex(r => r.some(c => HEAD.test(c)));
+  let col = { name: 0, sur: -1, talk: 1, front: -1, sep: -1 };
+  let data = rows;
+  if (hi >= 0) {
+    const h = rows[hi].map(c => String(c).toLocaleLowerCase('tr'));
+    const find = re => h.findIndex(c => re.test(c));
+    col.talk = find(/konu[sş]|ayr[ıi] ?otur/);
+    col.front = find(/ön|on sıra|göz|ilk sıra/);
+    col.sep = h.findIndex((c, i) => /ayr/.test(c) && i !== col.talk);
+    col.sur = find(/^soyad/);
+    col.name = h.findIndex((c, i) => HEAD.test(c) && i !== col.sur && i !== col.sep && i !== col.talk);
+    data = rows.slice(hi + 1);
+  }
+  const students = [], sepRaw = [];
+  for (const r of data) {
+    let name = up(r[col.name]);
+    if (col.sur >= 0 && r[col.sur]) name = up(name + ' ' + r[col.sur]);
+    if (!name || /^\d+$/.test(name)) continue;
+    const st = { id: uid(), name, talk: col.talk >= 0 && truthy(r[col.talk]), front: col.front >= 0 && truthy(r[col.front]) };
+    students.push(st);
+    if (col.sep >= 0 && r[col.sep]) sepRaw.push([st.id, String(r[col.sep])]);
+  }
+  const byName = Object.fromEntries(students.map(s => [s.name, s.id]));
+  const pairs = [];
+  for (const [id, txt] of sepRaw)
+    for (const n of txt.split(/[,;\/]+/).map(up).filter(Boolean)) {
+      const other = byName[n] || students.find(s => s.name.startsWith(n))?.id;
+      if (other && other !== id && !pairs.some(p => p.includes(id) && p.includes(other))) pairs.push([id, other]);
+    }
+  if (!students.length) return toast('Öğrenci adı okunamadı');
+  S.students = students; S.pairs = pairs; S.assign = {}; S.locked = {};
+  fitLayout();
+  save(); renderAll();
+  toast(`${students.length} öğrenci yüklendi (${students.filter(s => s.talk).length} ayrı oturmalı)`);
+}
+
+function readFile(f) {
+  if (typeof XLSX === 'undefined') return toast('Excel okuyucu yüklenemedi, internet bağlantınızı kontrol edin');
+  const rd = new FileReader();
+  rd.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      importRows(XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }));
+    } catch (err) { console.error(err); toast('Dosya okunamadı: ' + err.message); }
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+// Sınıf öğrenciler için yetersizse sıra sayısını büyüt
+function fitLayout() {
+  const L = S.layout;
+  const open = () => L.groups * L.rows * L.per - Object.keys(S.disabled).filter(key => inLayout(key)).length;
+  while (open() < S.students.length && L.rows < 15) L.rows++;
+}
+const inLayout = key => { const p = parseKey(key); return p.g < S.layout.groups && p.r < S.layout.rows && p.s < S.layout.per; };
+
+// ---------- Yerleştirme ----------
+function seatList() {
+  const { groups, rows, per } = S.layout, out = [];
+  for (let g = 0; g < groups; g++) for (let r = 0; r < rows; r++) for (let s = 0; s < per; s++) {
+    const key = k(g, r, s);
+    if (!S.disabled[key]) out.push({ key, g, r, s, x: g * (per + 0.5) + s, y: r });
+  }
+  return out;
+}
+// İki öğrencinin yakınlık cezası: aynı sıra çok kötü, uzaklaştıkça azalır
+function pen(a, b) {
+  if (a.g === b.g && a.r === b.r) return 100;
+  const dx = a.x - b.x, dy = a.y - b.y;
+  return 60 / (dx * dx + dy * dy);
+}
+const NEAR = 25; // bu cezanın üstü uyarı sayılır (aynı sıra, önü/arkası, çapraz, koridor karşısı)
+
+function conflictPairs() {
+  const talkers = S.students.filter(s => s.talk).map(s => s.id), out = [];
+  for (let i = 0; i < talkers.length; i++)
+    for (let j = i + 1; j < talkers.length; j++) out.push([talkers[i], talkers[j], 1, 'talk']);
+  const ids = new Set(S.students.map(s => s.id));
+  for (const [a, b] of S.pairs) if (ids.has(a) && ids.has(b)) out.push([a, b, 1.6, 'pair']);
+  return out;
+}
+
+function autoPlace() {
+  if (!S.students.length) return toast('Önce öğrenci listesi yükleyin');
+  const seats = seatList();
+  const seatByKey = Object.fromEntries(seats.map(s => [s.key, s]));
+  const ids = S.students.map(s => s.id);
+  const ix = Object.fromEntries(ids.map((id, i) => [id, i]));
+  const n = ids.length;
+
+  const pos = new Array(n).fill(null);
+  const fixedSeat = new Set();
+  for (const key in S.locked) {
+    const sid = S.assign[key];
+    if (seatByKey[key] && sid != null && ix[sid] != null) { pos[ix[sid]] = seatByKey[key]; fixedSeat.add(key); }
+  }
+  const freeSeats = seats.filter(s => !fixedSeat.has(s.key));
+  const freeStu = ids.map((_, i) => i).filter(i => !pos[i]);
+  if (freeStu.length > freeSeats.length) toast(`Uyarı: ${freeStu.length - freeSeats.length} öğrenciye koltuk yetmiyor`);
+
+  const adj = Array.from({ length: n }, () => []);
+  for (const [a, b, w] of conflictPairs()) { adj[ix[a]].push([ix[b], w]); adj[ix[b]].push([ix[a], w]); }
+  const front = S.students.map(s => s.front);
+  const contrib = u => {
+    const p = pos[u]; if (!p) return 0;
+    let c = 0.4 * p.r + (front[u] ? 18 * p.r : 0);
+    for (const [v, w] of adj[u]) if (pos[v]) c += w * pen(p, pos[v]);
+    return c;
+  };
+  const total = () => { let c = 0; for (let u = 0; u < n; u++) c += contrib(u); return c; };
+
+  let best = null, bestCost = Infinity;
+  const m = freeSeats.length;
+  for (let restart = 0; restart < 6; restart++) {
+    const slot = new Array(m).fill(-1);
+    const order = freeSeats.map((_, i) => i).sort(() => Math.random() - 0.5);
+    freeStu.forEach((u, i) => { if (i < m) { slot[order[i]] = u; pos[u] = freeSeats[order[i]]; } else pos[u] = null; });
+    let cost = total();
+    const iters = 40000;
+    for (let it = 0; it < iters; it++) {
+      const T = 30 * Math.pow(0.002, it / iters);
+      const i = Math.random() * m | 0, j = Math.random() * m | 0;
+      const u = slot[i], v = slot[j];
+      if (i === j || (u < 0 && v < 0)) continue;
+      const before = (u >= 0 ? contrib(u) : 0) + (v >= 0 ? contrib(v) : 0);
+      if (u >= 0) pos[u] = freeSeats[j];
+      if (v >= 0) pos[v] = freeSeats[i];
+      const after = (u >= 0 ? contrib(u) : 0) + (v >= 0 ? contrib(v) : 0);
+      const d = after - before;
+      if (d <= 0 || Math.random() < Math.exp(-d / T)) { slot[i] = v; slot[j] = u; cost += d; }
+      else { if (u >= 0) pos[u] = freeSeats[i]; if (v >= 0) pos[v] = freeSeats[j]; }
+    }
+    cost = total();
+    if (cost < bestCost) { bestCost = cost; best = pos.map(p => p && p.key); }
+  }
+
+  const assign = {};
+  for (const key of fixedSeat) assign[key] = S.assign[key];
+  best.forEach((key, u) => { if (key && !fixedSeat.has(key)) assign[key] = ids[u]; });
+  S.assign = assign;
+  save(); renderAll();
+  const c = analyze().length;
+  toast(c ? `Yerleştirildi — ${c} yakınlık kaçınılmaz kaldı` : 'Yerleştirildi — kurallara uyuldu ✔');
+}
+
+function analyze() {
+  const where = {};
+  for (const key in S.assign) if (inLayout(key) && !S.disabled[key]) {
+    const p = parseKey(key), per = S.layout.per;
+    where[S.assign[key]] = { ...p, x: p.g * (per + 0.5) + p.s, y: p.r };
+  }
+  const out = [];
+  for (const [a, b, , type] of conflictPairs())
+    if (where[a] && where[b]) {
+      const v = pen(where[a], where[b]);
+      if (v >= NEAR) out.push({ a, b, type, same: v >= 100 });
+    }
+  return out;
+}
+
+// ---------- Çizim ----------
+function renderAll() { renderLayoutInputs(); renderView(); renderList(); renderPairs(); renderRoom(); }
+
+function renderLayoutInputs() { $('#lg').value = S.layout.groups; $('#lr').value = S.layout.rows; $('#lp').value = S.layout.per; }
+
+function renderView() {
+  const adv = S.view === 'adv';
+  $('#roomwrap').classList.toggle('adv', adv);
+  $('#roomwrap').classList.toggle('simple', !adv);
+  for (const td of ['left', 'right', 'none']) $('#roomwrap').classList.toggle('td-' + td, S.tdesk === td);
+  document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('on', b.dataset.view === S.view));
+  document.querySelectorAll('#tdeskSeg button').forEach(b => b.classList.toggle('on', b.dataset.td === S.tdesk));
+}
+
+const initials = name => { const w = name.split(' ').filter(Boolean); return (w[0]?.[0] || '') + (w.length > 1 ? w[w.length - 1][0] : ''); };
+const hue = name => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+
+function seatCard(st, key, bad) {
+  const cls = ['card', st.talk && 'talk', bad.has(st.id) && 'conflict'].filter(Boolean).join(' ');
+  const icons = (st.talk ? '<span class="ic" title="Ayrı oturmalı">🔹</span>' : '') +
+                (st.front ? '<span class="ic" title="Ön sıra">👓</span>' : '') +
+                (S.locked[key] ? '<span class="ic" title="Kilitli">🔒</span>' : '');
+  const body = S.view === 'adv'
+    ? `<span class="av" style="--h:${hue(st.name)}">${esc(initials(st.name))}<span class="badges">${icons}</span></span>
+       <span class="n" title="${esc(st.name)}">${esc(st.name)}</span>`
+    : `<span class="n" title="${esc(st.name)}">${esc(st.name)}</span>${icons}`;
+  return `
+    <div class="${cls}" draggable="true">${body}</div>
+    <div class="acts">
+      <span data-act="lock" title="Yerini kilitle / aç">${S.locked[key] ? '🔓' : '🔒'}</span>
+      <span data-act="talk" title="Ayrı oturmalı olarak işaretle">🔹</span>
+      <span data-act="out" title="Sıradan kaldır">✕</span>
+    </div>`;
+}
+
+function renderRoom() {
+  const { groups, rows, per } = S.layout, map = byId(), adv = S.view === 'adv';
+  const issues = analyze(), bad = new Set(issues.flatMap(i => [i.a, i.b]));
+  $('#emptyHint').style.display = S.students.length ? 'none' : '';
+  const room = $('#room'); room.innerHTML = '';
+  for (let g = 0; g < groups; g++) {
+    const gd = document.createElement('div'); gd.className = 'group';
+    gd.innerHTML = `<div class="gtitle">${g + 1}. Grup</div>`;
+    for (let r = 0; r < rows; r++) {
+      const desk = document.createElement('div'); desk.className = 'desk';
+      for (let s = 0; s < per; s++) {
+        const key = k(g, r, s), st = map[S.assign[key]];
+        const seat = document.createElement('div');
+        seat.className = 'seat'; seat.dataset.key = key;
+        if (g === 0 && s === 0) seat.innerHTML = `<span class="rowlbl">${r + 1}</span>`;
+        if (S.disabled[key]) {
+          seat.classList.add('disabled'); seat.title = 'Kapalı koltuk — açmak için tıklayın';
+          if (adv) seat.insertAdjacentHTML('beforeend', '<span class="off-chair">✕</span>');
+        } else if (!st) {
+          seat.classList.add('empty'); seat.title = 'Boş — kapatmak için tıklayın';
+          if (adv) seat.insertAdjacentHTML('beforeend', '<span class="empty-chair">boş</span>');
+        } else {
+          if (S.locked[key]) seat.classList.add('locked');
+          seat.insertAdjacentHTML('beforeend', seatCard(st, key, bad));
+          seat.querySelector('.card').addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', JSON.stringify({ from: key }));
+          });
+        }
+        bindDrop(seat, key);
+        desk.appendChild(seat);
+      }
+      gd.appendChild(desk);
+    }
+    room.appendChild(gd);
+  }
+  renderStatus(issues);
+}
+
+function renderStatus(issues) {
+  const map = byId();
+  const placed = new Set(Object.entries(S.assign).filter(([key]) => inLayout(key) && !S.disabled[key]).map(([, v]) => v));
+  const seats = seatList().length;
+  const un = S.students.filter(s => !placed.has(s.id)).length;
+  $('#status').innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${S.students.length}</b><span>Öğrenci</span></div>
+      <div class="stat"><b>${seats}</b><span>Açık koltuk</span></div>
+      <div class="stat"><b>${un}</b><span>Yerleşmemiş</span></div>
+      <div class="stat st-talk"><b>${S.students.filter(s => s.talk).length}</b><span>Ayrı oturmalı</span></div>
+    </div>
+    ${placed.size && !issues.length ? '<div class="okline">✔ Ayrı oturması gerekenler birbirinden uzak</div>' : ''}`;
+  $('#warn').innerHTML = issues.map(i =>
+    `<li>${esc(map[i.a].name)} ↔ ${esc(map[i.b].name)} ${i.same ? 'aynı sırada' : 'yakın oturuyor'}${i.type === 'pair' ? ' (ayrı tutulmalı)' : ''}</li>`).join('');
+}
+
+function renderList() {
+  const q = up($('#search').value);
+  const placed = new Set(Object.entries(S.assign).filter(([key]) => inLayout(key) && !S.disabled[key]).map(([, v]) => v));
+  $('#count').textContent = S.students.length ? `${S.students.length} öğrenci` : 'boş';
+  const list = $('#list');
+  list.innerHTML = S.students.filter(s => !q || s.name.includes(q)).map(s => `
+    <div class="stu" data-id="${s.id}">
+      <span class="dot ${placed.has(s.id) ? 'on' : ''}" title="${placed.has(s.id) ? 'Yerleşti' : 'Yerleşmedi'}"></span>
+      <span class="nm" draggable="true">${esc(s.name)}</span>
+      <span class="tog t ${s.talk ? 'on' : ''}" data-act="talk" title="Ayrı oturmalı">🔹</span>
+      <span class="tog f ${s.front ? 'on' : ''}" data-act="front" title="Ön sırada oturmalı">👓</span>
+      <button class="x" data-act="del" title="Sil">✕</button>
+    </div>`).join('') || '<div class="small" style="padding:10px 0">Henüz öğrenci yok.</div>';
+  const opts = '<option value="">Öğrenci seç…</option>' + S.students.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  $('#pa').innerHTML = opts; $('#pb').innerHTML = opts;
+}
+
+function renderPairs() {
+  const map = byId();
+  S.pairs = S.pairs.filter(([a, b]) => map[a] && map[b]);
+  $('#pairs').innerHTML = S.pairs.map(([a, b], i) =>
+    `<div class="pair"><span>${esc(map[a].name)} ⇹ ${esc(map[b].name)}</span><button class="x" data-i="${i}">✕</button></div>`).join('')
+    || '<div class="small">Henüz ikili eklenmedi.</div>';
+}
+
+// ---------- Sürükle bırak ----------
+function bindDrop(el, key) {
+  el.addEventListener('dragover', e => { if (!S.disabled[key]) { e.preventDefault(); el.classList.add('over'); } });
+  el.addEventListener('dragleave', () => el.classList.remove('over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('over');
+    let d; try { d = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+    if (d.from) {
+      if (d.from === key) return;
+      const a = S.assign[d.from], b = S.assign[key];
+      if (b != null) S.assign[d.from] = b; else delete S.assign[d.from];
+      S.assign[key] = a;
+    } else if (d.student) {
+      for (const kk in S.assign) if (S.assign[kk] === d.student) delete S.assign[kk];
+      S.assign[key] = d.student;
+    }
+    save(); renderRoom(); renderList();
+  });
+}
+
+// ---------- Olaylar ----------
+$('#room').addEventListener('click', e => {
+  const seat = e.target.closest('.seat'); if (!seat) return;
+  const key = seat.dataset.key, act = e.target.dataset.act;
+  if (act === 'lock') { S.locked[key] ? delete S.locked[key] : (S.locked[key] = true); }
+  else if (act === 'talk') { const st = byId()[S.assign[key]]; if (st) st.talk = !st.talk; }
+  else if (act === 'out') { delete S.assign[key]; delete S.locked[key]; }
+  else if (e.target.closest('.card')) return;
+  else if (S.disabled[key]) delete S.disabled[key];
+  else if (!S.assign[key]) S.disabled[key] = true;
+  else return;
+  save(); renderRoom(); renderList();
+});
+
+$('#list').addEventListener('click', e => {
+  const row = e.target.closest('.stu'); if (!row) return;
+  const st = S.students.find(s => s.id === row.dataset.id), act = e.target.dataset.act;
+  if (act === 'talk') st.talk = !st.talk;
+  else if (act === 'front') st.front = !st.front;
+  else if (act === 'del') {
+    if (!confirm(`${st.name} silinsin mi?`)) return;
+    S.students = S.students.filter(s => s !== st);
+    for (const kk in S.assign) if (S.assign[kk] === st.id) { delete S.assign[kk]; delete S.locked[kk]; }
+  } else return;
+  save(); renderAll();
+});
+$('#list').addEventListener('dragstart', e => {
+  const row = e.target.closest('.stu');
+  if (row) e.dataTransfer.setData('text/plain', JSON.stringify({ student: row.dataset.id }));
+});
+// Sıradan listeye geri sürükleyince yerinden kaldır
+$('#list').addEventListener('dragover', e => e.preventDefault());
+$('#list').addEventListener('drop', e => {
+  e.preventDefault();
+  let d; try { d = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+  if (d.from) { delete S.assign[d.from]; delete S.locked[d.from]; save(); renderRoom(); renderList(); }
+});
+
+$('#search').addEventListener('input', renderList);
+function addStudent() {
+  const name = up($('#newName').value); if (!name) return;
+  S.students.push({ id: uid(), name, talk: false, front: false });
+  $('#newName').value = ''; fitLayout(); save(); renderAll();
+}
+$('#btnAdd').onclick = addStudent;
+$('#newName').addEventListener('keydown', e => { if (e.key === 'Enter') addStudent(); });
+
+$('#btnPair').onclick = () => {
+  const a = $('#pa').value, b = $('#pb').value;
+  if (!a || !b || a === b) return toast('İki farklı öğrenci seçin');
+  if (S.pairs.some(p => p.includes(a) && p.includes(b))) return toast('Bu ikili zaten ekli');
+  S.pairs.push([a, b]); save(); renderPairs(); renderRoom();
+};
+$('#pairs').addEventListener('click', e => {
+  if (e.target.dataset.i == null) return;
+  S.pairs.splice(+e.target.dataset.i, 1); save(); renderPairs(); renderRoom();
+});
+
+for (const [id, prop, max] of [['#lg', 'groups', 6], ['#lr', 'rows', 15], ['#lp', 'per', 4]])
+  $(id).addEventListener('change', e => {
+    S.layout[prop] = Math.max(1, Math.min(max, +e.target.value || 1));
+    for (const kk in S.assign) if (!inLayout(kk)) delete S.assign[kk];
+    save(); renderAll();
+  });
+
+$('#viewSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.view = b.dataset.view; save(); renderView(); renderRoom();
+});
+
+$('#btnFromCls').onclick = async () => {
+  const c = await OA.pickClass({ title: 'Hangi sınıf yüklensin?' });
+  if (!c) return;
+  if (!c.students.length) return toast('Bu sınıfta öğrenci yok');
+  if (S.students.length && !confirm('Mevcut liste seçilen sınıfla değiştirilsin mi? (Ayrı oturmalı / ön sıra işaretleri aynı isimlerde korunur)')) return;
+  const old = Object.fromEntries(S.students.map(s => [s.name, s]));
+  S.students = c.students.map(s => ({ id: uid(), name: s.name, talk: !!old[s.name]?.talk, front: !!old[s.name]?.front }));
+  S.pairs = []; S.assign = {}; S.locked = {};
+  fitLayout(); save(); renderAll();
+  toast(`${c.name}: ${S.students.length} öğrenci yüklendi`);
+};
+$('#btnToCls').onclick = () => {
+  if (!S.students.length) return toast('Kaydedilecek öğrenci yok');
+  const name = prompt('Sınıfın adı ne olsun? (ör. 9-A)', '');
+  if (!name?.trim()) return;
+  OA.classes.create(name.trim(), S.students.map(s => ({ name: s.name })));
+  toast(`"${name.trim()}" Sınıflarım'a kaydedildi`);
+};
+
+$('#tdeskSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S.tdesk = b.dataset.td; save(); renderView();
+});
+
+function renderHide() {
+  document.body.classList.toggle('marks-off', !!S.hideMarks);
+  $('#btnHide').classList.toggle('on', !!S.hideMarks);
+  $('#btnHide').textContent = S.hideMarks ? '👁 İşaretleri göster' : '🙈 İşaretleri gizle';
+}
+$('#btnHide').onclick = () => { S.hideMarks = !S.hideMarks; save(); renderHide(); };
+renderHide();
+
+$('#btnPlace').onclick = autoPlace;
+$('#btnClear').onclick = () => {
+  if (!confirm('Kilitli olmayan tüm sıralar boşaltılsın mı?')) return;
+  for (const kk in S.assign) if (!S.locked[kk]) delete S.assign[kk];
+  save(); renderAll();
+};
+// Yatay A4'ün yazdırılabilir alanı (10 mm kenar boşluğuyla, 96 dpi): 277 × 190 mm
+const PRINT_W = 277 * 96 / 25.4, PRINT_H = 190 * 96 / 25.4;
+function fitPrint() {
+  const c = $('.classroom');
+  const z = Math.min(1, (PRINT_W - 8) / c.scrollWidth, (PRINT_H - 8) / c.scrollHeight);
+  document.documentElement.style.setProperty('--pz', z.toFixed(3));
+}
+window.addEventListener('beforeprint', fitPrint);
+$('#btnPrint').onclick = () => { fitPrint(); window.print(); };
+
+$('#btnExport').onclick = () => {
+  if (typeof XLSX === 'undefined') return toast('Excel aracı yüklenemedi, internet bağlantınızı kontrol edin');
+  const { groups, rows, per } = S.layout, map = byId();
+  const width = groups * per + groups - 1;
+  const aoa = [['TAHTA'], []];
+  for (let r = 0; r < rows; r++) {
+    const row = [];
+    for (let g = 0; g < groups; g++) {
+      for (let s = 0; s < per; s++) row.push(map[S.assign[k(g, r, s)]]?.name || '');
+      if (g < groups - 1) row.push('');
+    }
+    aoa.push(row);
+  }
+  if (!S.hideMarks) aoa.push([], ['Ad Soyad', 'Ayrı Oturmalı', 'Ön Sıra']);
+  if (!S.hideMarks) for (const s of S.students) aoa.push([s.name, s.talk ? 'Evet' : '', s.front ? 'Evet' : '']);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = Array.from({ length: width }, (_, i) => ({ wch: (i + 1) % (per + 1) === 0 ? 4 : 20 }));
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: width - 1 } }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Oturma Planı');
+  XLSX.writeFile(wb, `oturma-plani-${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
+
+$('#tpl').onclick = e => {
+  e.preventDefault();
+  if (typeof XLSX === 'undefined') return toast('Excel aracı yüklenemedi, internet bağlantınızı kontrol edin');
+  const names = ['CARALLAH', 'EYMEN MEMİŞ', 'M. ALİ', 'ELİF DURMUŞ', 'EYLÜL', 'EYMEN ARAS', 'İKRA', 'MUSTAFA', 'SÜMEYYE', 'BİRGÜL NUR', 'BERKAY BOĞA'];
+  const aoa = [['Ad Soyad', 'Ayrı Oturmalı', 'Ön Sıra', 'Ayrı Tut']];
+  names.forEach((n, i) => aoa.push([n, i % 4 === 1 ? 'Evet' : '', i === 3 ? 'Evet' : '', i === 0 ? 'MUSTAFA' : '']));
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch: 24 }, { wch: 11 }, { wch: 10 }, { wch: 24 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Öğrenciler');
+  XLSX.writeFile(wb, 'ogrenci-listesi-sablon.xlsx');
+};
+
+const drop = $('#drop');
+drop.onclick = () => $('#file').click();
+$('#file').onchange = e => { if (e.target.files[0]) readFile(e.target.files[0]); e.target.value = ''; };
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]); });
+
+renderAll();
+</script>
+</body>
+</html>

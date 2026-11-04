@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Etkinlik Katılım Listesi · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .clsbox{display:flex;flex-direction:column;gap:6px}
+  .clsbox label{display:flex;align-items:center;gap:8px;font-weight:800;padding:7px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);cursor:pointer}
+  .clsbox label:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
+  .clsbox input{accent-color:var(--brand)}
+  .clsbox small{margin-left:auto;color:var(--muted)}
+  .p-head{text-align:center;margin-bottom:14px}
+  .p-head .o{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#555;font-size:12.5px}
+  .p-head h1{margin:4px 0 8px;font-size:22px}
+  .p-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 18px;font-size:13px}
+  .p-tbl{width:100%;border-collapse:collapse;font-size:13px}
+  .p-tbl th,.p-tbl td{border:1px solid #888;padding:6px 6px;text-align:center}
+  .p-tbl td{height:var(--rh,34px);padding:2px 6px}
+  .p-tbl th{background:#f1f1f1}
+  .p-tbl td.l{text-align:left}
+  .cu-row{display:flex;gap:6px;align-items:center;margin-top:6px}
+  .rh-row{display:flex;gap:10px;align-items:center}
+  .rh-row input{flex:1;accent-color:var(--brand)}
+  .rh-row b{min-width:52px;text-align:right}
+  .p-tbl .box{display:inline-block;width:14px;height:14px;border:1.5px solid #333;border-radius:2px}
+  .p-sign{display:flex;justify-content:space-between;gap:30px;margin-top:40px;break-inside:avoid}
+  .p-sign div{flex:1;text-align:center;font-weight:700;font-size:13.5px}
+  .p-sign .ln{border-bottom:1px dotted #444;height:36px;margin:0 18% 6px}
+  .p-sign small{display:block;color:#555}
+  .p-note{margin-top:12px;font-size:12.5px;white-space:pre-line}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-layout">
+    <div class="panel" id="form">
+      <div class="psec"><h3 class="sec-title">🎪 Etkinlik</h3><div class="stack">
+        <label class="field">Okul adı<input class="input" data-k="okul" placeholder="ör. Atatürk Ortaokulu"></label>
+        <label class="field">Liste başlığı<input class="input" data-k="title"></label>
+        <label class="field">Etkinlik adı<input class="input" data-k="etkinlik" placeholder="ör. Bilim Merkezi Gezisi"></label>
+        <div class="grid2">
+          <label class="field">Tarih<input class="input" type="date" data-k="tarih"></label>
+          <label class="field">Saat<input class="input" data-k="saat" placeholder="ör. 09.00 – 15.00"></label>
+        </div>
+        <label class="field">Yer<input class="input" data-k="yer"></label>
+        <div class="grid2">
+          <label class="field">Sorumlu öğretmen<input class="input" data-k="sorumlu"></label>
+          <label class="field">Okul müdürü<input class="input" data-k="mudur"></label>
+        </div>
+      </div></div>
+      <div class="psec"><h3 class="sec-title">👥 Katılımcılar</h3>
+        <div class="clsbox" id="clsbox"></div>
+        <label class="field" style="margin-top:10px">Ek isimler (her satıra bir; sınıf için "Ad Soyad - Sınıf")<textarea class="input" rows="3" data-k="manual"></textarea></label>
+        <label class="field" style="margin-top:10px">Sona boş satır ekle<input class="input" type="number" min="0" max="30" data-k="blank" style="width:90px"></label>
+      </div>
+      <div class="psec"><h3 class="sec-title">🧾 Sütunlar</h3>
+        <div class="checks" id="cols"></div>
+        <div class="field" style="margin-top:12px">Kendi sütunlarınız
+          <div id="customs"></div>
+          <button class="btn sm" id="btnAddCu" style="margin-top:8px;align-self:flex-start">+ Sütun ekle</button>
+        </div>
+      </div>
+      <div class="psec"><h3 class="sec-title">📐 Görünüm</h3>
+        <div class="field">Satır yüksekliği <span class="small">(imza için geniş tutun)</span>
+          <div class="rh-row"><span class="small">Sık</span><input type="range" min="20" max="80" step="2" data-k="rowH"><span class="small">Geniş</span><b id="rhVal"></b></div>
+        </div>
+        <div class="checks" id="look" style="margin-top:10px"></div>
+        <label class="field" style="margin-top:10px">Alt not<textarea class="input" rows="2" data-k="note" placeholder="ör. Veli izin belgeleri sorumlu öğretmene teslim edilmiştir."></textarea></label>
+      </div>
+    </div>
+    <div class="doc-preview">
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Önizleme</span><span class="row"><span class="chip" id="cnt"></span><button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button></span></h2>
+        <div class="paper-stage" id="stage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '✅', title: 'Etkinlik Katılım Listesi',
+  help: {
+    key: 'katilim', emoji: '✅', title: 'Bu bir etkinlik katılım listesi aracıdır',
+    intro: 'Gezi, tören ve etkinlikler için imzalı katılım listesi hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🎪', title: 'Etkinliği yazın', text: 'Etkinlik adı, tarih, saat, yer ve sorumlu öğretmeni girin.' },
+      { icon: '🏫', title: 'Sınıfları seçin', text: 'Sınıflarım\'dan bir ya da birden çok sınıfı işaretleyin; öğrenciler sınıf ve numara sırasıyla listelenir. Ek isimleri de yazabilirsiniz.' },
+      { icon: '🧾', title: 'Sütunları seçin', text: 'İmza, veli izni, telefon, açıklama gibi sütunları açıp kapatın; istediğiniz kadar kendi sütununuzu ekleyin ve satır yüksekliğini ayarlayın.' },
+      { icon: '🖨️', title: 'Yazdırın', text: '"Yazdır / PDF" ile listeyi basın; uzun listeler kendiliğinden birden çok sayfaya bölünür.' }
+    ]
+  }
+});
+
+const KEY = 'oa.katilim';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const COLS = { sira: 'Sıra', sinif: 'Sınıf', no: 'No', imza: 'İmza', izin: 'Veli izni', tel: 'Veli telefonu', aciklama: 'Açıklama' };
+let S = {
+  okul: '', title: 'Etkinlik Katılım Listesi', etkinlik: '', tarih: new Date().toISOString().slice(0, 10), saat: '', yer: '', sorumlu: '', mudur: '',
+  classes: OA.classes.active() ? [OA.classes.active().id] : [], manual: '', blank: 0, customs: [], note: '',
+  cols: { sira: true, sinif: true, no: true, imza: true, izin: false, tel: false, aciklama: false },
+  rowH: 36, sign: true, zebra: false,
+  ...OA.store.get(KEY, {})
+};
+// Önceki sürümün tek özel sütunu ve "geniş satır" seçeneği yeni ayarlara çevrilir
+if (S.custom) { S.customs = [...(S.customs || []), S.custom]; delete S.custom; }
+if (S.tall != null) { S.rowH = S.tall ? 40 : 28; delete S.tall; }
+const save = () => OA.store.set(KEY, S);
+
+function people() {
+  const fromClasses = OA.classes.list().filter(c => S.classes.includes(c.id))
+    .flatMap(c => [...c.students].sort((a, b) => (+a.no || 1e9) - (+b.no || 1e9)).map(s => ({ name: s.name, no: s.no, cls: c.name })));
+  const extra = S.manual.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => { const [name, cls = ''] = l.split(/\s+-\s+|\t/); return { name: OA.up(name), no: '', cls: cls.trim() }; });
+  return [...fromClasses, ...extra];
+}
+
+function renderForm() {
+  const list = OA.classes.list();
+  $('#clsbox').innerHTML = list.length ? list.map(c => `<label><input type="checkbox" data-cls="${c.id}" ${S.classes.includes(c.id) ? 'checked' : ''}> 🏫 ${esc(c.name)}<small>${c.students.length} öğrenci</small></label>`).join('')
+    : '<div class="small">Kayıtlı sınıf yok. <a href="siniflar.html">Sınıflarım</a> sayfasından ekleyin ya da aşağıya isim yazın.</div>';
+  $('#cols').innerHTML = Object.entries(COLS).map(([k, l]) => `<label><input type="checkbox" data-col="${k}" ${S.cols[k] ? 'checked' : ''}> ${l}</label>`).join('');
+  $('#customs').innerHTML = S.customs.map((c, i) => `<div class="cu-row"><input class="input" value="${esc(c)}" data-cu="${i}" placeholder="Sütun adı (ör. Kan grubu, Ücret)"><button class="x" data-cudel="${i}" title="Sütunu sil">✕</button></div>`).join('')
+    || '<div class="small" style="margin-top:4px">Henüz eklenmedi. Örneğin "Ücret", "Kan grubu", "Servis".</div>';
+  $('#rhVal').textContent = S.rowH + ' px';
+  $('#look').innerHTML = [['zebra', 'Satırları renklendir'], ['sign', 'İmza alanı']].map(([k, l]) => `<label><input type="checkbox" data-look="${k}" ${S[k] ? 'checked' : ''}> ${l}</label>`).join('');
+  document.querySelectorAll('#form [data-k]').forEach(el => { if (document.activeElement !== el) el.value = S[el.dataset.k] ?? ''; });
+}
+
+function render() {
+  const list = people(), C = S.cols;
+  $('#cnt').textContent = `${list.length} kişi`;
+  const heads = [C.sira && 'Sıra', C.sinif && 'Sınıf', C.no && 'No', 'Ad Soyad', C.tel && 'Veli telefonu', ...S.customs.map(c => c || ' '), C.izin && 'Veli izni', C.imza && 'İmza', C.aciklama && 'Açıklama'].filter(Boolean);
+  const row = (p, i) => `<tr${S.zebra && i % 2 ? ' style="background:#f6f6f6"' : ''}>
+    ${C.sira ? `<td>${i + 1}</td>` : ''}${C.sinif ? `<td>${esc(p.cls || '')}</td>` : ''}${C.no ? `<td>${esc(p.no || '')}</td>` : ''}
+    <td class="l">${esc(p.name || '')}</td>${C.tel ? '<td></td>' : ''}${S.customs.map(() => '<td></td>').join('')}${C.izin ? '<td><span class="box"></span></td>' : ''}
+    ${C.imza ? '<td style="width:22%"></td>' : ''}${C.aciklama ? '<td style="width:18%"></td>' : ''}</tr>`;
+  const rows = [...list, ...Array.from({ length: +S.blank || 0 }, () => ({}))].map(row).join('');
+  const meta = [['Etkinlik', S.etkinlik], ['Tarih', OA.trDate(S.tarih)], ['Saat', S.saat], ['Yer', S.yer]].filter(([, v]) => v);
+  const html = `
+    <div class="paper">
+      <div class="p-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${esc(S.title)}</h1>
+        <div class="p-meta">${meta.map(([k, v]) => `<span>${k}: <b>${esc(v)}</b></span>`).join('')}</div></div>
+      <table class="p-tbl" style="--rh:${S.rowH}px"><thead><tr>${heads.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+        <tbody>${rows || `<tr><td colspan="${heads.length}" style="padding:30px;color:#888">Sınıf seçin ya da isim ekleyin.</td></tr>`}</tbody></table>
+      ${S.note ? `<div class="p-note">${esc(S.note)}</div>` : ''}
+      ${S.sign ? `<div class="p-sign"><div><div class="ln"></div>${esc(S.sorumlu) || '&nbsp;'}<small>Sorumlu Öğretmen</small></div><div><div class="ln"></div>${esc(S.mudur) || '&nbsp;'}<small>Okul Müdürü</small></div></div>` : ''}
+    </div>`;
+  OA.renderPaper($('#stage'), html, { margin: '12mm' });
+}
+
+$('#form').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.k) { S[t.dataset.k] = t.type === 'range' ? +t.value : t.value; if (t.dataset.k === 'rowH') $('#rhVal').textContent = S.rowH + ' px'; }
+  else if (t.dataset.cu != null) S.customs[+t.dataset.cu] = t.value;
+  else if (t.dataset.cls) S.classes = t.checked ? [...S.classes, t.dataset.cls] : S.classes.filter(x => x !== t.dataset.cls);
+  else if (t.dataset.col) S.cols[t.dataset.col] = t.checked;
+  else if (t.dataset.look) S[t.dataset.look] = t.checked;
+  else return;
+  save(); render();
+});
+$('#form').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'btnAddCu') { S.customs.push(''); save(); renderForm(); render(); $('#customs').lastElementChild.querySelector('input').focus(); }
+  else if (b.dataset.cudel != null) { S.customs.splice(+b.dataset.cudel, 1); save(); renderForm(); render(); }
+});
+$('#btnPrint').onclick = () => { render(); window.print(); };
+renderForm(); render();
+</script>
+</body>
+</html>

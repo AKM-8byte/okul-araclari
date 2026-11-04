@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rastgele Seçici · Okul Araçları</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+  .controls .field{min-width:220px}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+
+  .stage{
+    position:relative;overflow:hidden;border-radius:28px;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    background:var(--grad);color:#fff;padding:30px;box-shadow:0 6px 0 #c2410c,var(--shadow);
+  }
+  .stage:fullscreen{border-radius:0;box-shadow:none}
+  .stage .bubble{position:absolute;border-radius:50%;background:rgba(255,255,255,.12);pointer-events:none}
+  .picks{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1}
+  .pick{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:220px}
+  .pick .big-av{width:120px;height:120px;border-radius:50%;display:grid;place-items:center;font-size:44px;font-weight:900;background:rgba(255,255,255,.22);border:5px solid rgba(255,255,255,.6)}
+  .pick .nm{font-family:"Baloo 2","Nunito",sans-serif;font-size:clamp(30px,5vw,64px);font-weight:800;line-height:1.05;text-align:center;text-shadow:0 4px 0 rgba(0,0,0,.12);max-width:90vw}
+  .pick .no{font-weight:800;opacity:.85}
+  .picks.many .pick .nm{font-size:clamp(22px,3vw,38px)}
+  .picks.many .pick .big-av{width:84px;height:84px;font-size:30px}
+  .pick.rolling .nm{opacity:.85}
+  .pick.done{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+  .idle{font-size:22px;font-weight:800;opacity:.95;text-align:center;position:relative;z-index:1}
+  .idle b{display:block;font-size:64px}
+  .go{position:relative;z-index:1;font:inherit;font-size:24px;font-weight:900;border:none;border-radius:999px;padding:16px 46px;background:#fff;color:var(--brand);cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.18)}
+  .go:active{transform:translateY(3px);box-shadow:0 3px 0 rgba(0,0,0,.18)}
+  .go:disabled{opacity:.6;cursor:wait}
+  .stage-tools{position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:2}
+  .stage-tools button{font:inherit;font-weight:800;border:none;border-radius:12px;padding:7px 12px;background:rgba(255,255,255,.22);color:#fff;cursor:pointer}
+  .counter{position:absolute;top:16px;left:18px;font-weight:900;background:rgba(255,255,255,.22);border-radius:999px;padding:5px 14px;z-index:2}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:fall 1.8s ease-in forwards}
+  @keyframes fall{to{transform:translateY(520px) rotate(720deg);opacity:0}}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;max-height:44vh;overflow:auto}
+  .schip{font:inherit;font-weight:800;font-size:13px;border:1.5px solid var(--line);background:var(--surface-2);color:var(--text);border-radius:999px;padding:4px 10px 4px 4px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .schip .av{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:9.5px;font-weight:900;background:hsl(var(--h) 65% 52%)}
+  .schip.picked{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+  .schip.absent{opacity:.45;text-decoration:line-through}
+  .hist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;max-height:30vh;overflow:auto}
+  .hist li{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:13.5px;padding:6px 10px;background:var(--surface-2);border-radius:10px}
+  .hist small{color:var(--muted)}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="controls">
+    <label class="field">Sınıf<select class="input" id="cls"></select></label>
+    <div class="field">Kaç kişi seçilsin?<div class="seg" id="countSeg"></div></div>
+    <div class="checks" style="align-self:center">
+      <label><input type="checkbox" id="noRepeat"> Seçilen tekrar çıkmasın</label>
+      <label><input type="checkbox" id="sound"> 🔊 Ses</label>
+    </div>
+  </div>
+  <div class="panel" id="manualBox" style="display:none;margin-bottom:16px">
+    <label class="field">Her satıra bir isim yazın<textarea class="input" id="manual" rows="4" placeholder="Ahmet&#10;Ayşe&#10;Mehmet"></textarea></label>
+  </div>
+
+  <div class="layout">
+    <section class="stage" id="stage">
+      <span class="bubble" style="width:240px;height:240px;right:-60px;top:-80px"></span>
+      <span class="bubble" style="width:140px;height:140px;left:-40px;bottom:-50px"></span>
+      <div class="confetti" id="confetti"></div>
+      <div class="counter" id="remain"></div>
+      <div class="stage-tools"><button id="btnFull" title="Tam ekran (tahtaya yansıtmak için)">⛶ Tam ekran</button></div>
+      <div id="display"><div class="idle"><b>🎲</b>Seçmek için düğmeye ya da boşluk tuşuna basın</div></div>
+      <button class="go" id="btnGo">🎲 Seç!</button>
+    </section>
+
+    <aside class="stack">
+      <div class="panel">
+        <h2><span><span class="h-ic">👥</span> Öğrenciler</span><button class="btn sm" id="btnReset" title="Seçilenleri sıfırla">↺ Sıfırla</button></h2>
+        <p class="small" style="margin:0 0 8px">Gelmeyen öğrencinin üstüne tıklayın, seçime katılmaz.</p>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="panel">
+        <h2><span><span class="h-ic">🕘</span> Geçmiş</span><button class="btn sm ghost" id="btnClearHist">Temizle</button></h2>
+        <ul class="hist" id="hist"></ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🎲', title: 'Rastgele Öğrenci Seçici',
+  help: {
+    key: 'secici', emoji: '🎲', title: 'Bu bir rastgele öğrenci seçicidir',
+    intro: 'Sınıftan adil ve eğlenceli bir şekilde öğrenci seçer. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🏫', title: 'Sınıfı seçin', text: 'Üstten Sınıflarım\'daki bir sınıfı seçin ya da "Elle liste yaz" ile isimleri yazın.' },
+      { icon: '🙅', title: 'Gelmeyenleri işaretleyin', text: 'Sağdaki listede gelmeyen öğrencinin adına tıklayın; seçime katılmaz.' },
+      { icon: '🎲', title: '"Seç!"e basın', text: 'İsimler döner ve biri seçilir. Boşluk tuşuyla da seçebilirsiniz. İsterseniz aynı anda 2-5 kişi seçin.' },
+      { icon: '🔁', title: 'Herkese sıra gelsin', text: '"Seçilen tekrar çıkmasın" açıkken herkes seçilene kadar kimse ikinci kez çıkmaz.' },
+      { icon: '⛶', title: 'Tahtaya yansıtın', text: '"Tam ekran" ile seçim ekranını büyütün.' }
+    ]
+  }
+});
+
+const KEY = 'oa.secici';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+let S = { classId: OA.classes.active()?.id || '__manual', manual: '', count: 1, noRepeat: true, sound: true, absent: {}, picked: [], history: [], ...OA.store.get(KEY, {}) };
+const save = () => OA.store.set(KEY, S);
+let rolling = false;
+
+function students() {
+  if (S.classId === '__manual') return S.manual.split(/\r?\n/).map(x => x.trim()).filter(Boolean).map((name, i) => ({ id: 'm' + i + name, name, no: '' }));
+  return OA.classes.get(S.classId)?.students || [];
+}
+const pool = () => {
+  const present = students().filter(s => !S.absent[s.id]);
+  const fresh = present.filter(s => !S.picked.includes(s.id));
+  return S.noRepeat ? fresh : present;
+};
+
+function renderControls() {
+  OA.fillClassSelect($('#cls'), S.classId, { manual: true });
+  if (!OA.classes.list().length && S.classId !== '__manual') S.classId = '__manual';
+  $('#cls').value = S.classId;
+  $('#countSeg').innerHTML = [1, 2, 3, 4, 5].map(n => `<button data-n="${n}" class="${S.count === n ? 'on' : ''}">${n}</button>`).join('');
+  $('#noRepeat').checked = S.noRepeat; $('#sound').checked = S.sound;
+  $('#manualBox').style.display = S.classId === '__manual' ? '' : 'none';
+  $('#manual').value = S.manual;
+}
+function renderSide() {
+  const list = students();
+  $('#chips').innerHTML = list.map(s => `
+    <button class="schip ${S.absent[s.id] ? 'absent' : ''} ${S.picked.includes(s.id) ? 'picked' : ''}" data-id="${esc(s.id)}" title="${S.absent[s.id] ? 'Gelmedi — eklemek için tıklayın' : 'Gelmedi olarak işaretlemek için tıklayın'}">
+      <span class="av" style="--h:${OA.hue(s.name)}">${esc(OA.initials(s.name))}</span>${esc(s.name)}</button>`).join('')
+    || '<div class="small">Liste boş. Sınıf seçin ya da isim yazın.</div>';
+  const p = pool().length, present = list.filter(s => !S.absent[s.id]).length;
+  $('#remain').textContent = S.noRepeat ? `Kalan: ${p} / ${present}` : `${present} öğrenci`;
+  $('#hist').innerHTML = S.history.slice().reverse().map(h => `<li><span>${esc(h.names.join(', '))}</span><small>${h.t}</small></li>`).join('') || '<li class="small">Henüz seçim yapılmadı.</li>';
+}
+
+// ---------- Ses ----------
+let ac;
+function beep(freq, dur, type = 'square', vol = .04) {
+  if (!S.sound) return;
+  try {
+    ac = ac || new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = freq; g.gain.value = vol;
+    g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + dur);
+    o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + dur);
+  } catch {}
+}
+const chime = () => { [660, 880, 1320].forEach((f, i) => setTimeout(() => beep(f, .35, 'sine', .12), i * 120)); };
+
+function confetti() {
+  const colors = ['#fff', '#fde68a', '#bbf7d0', '#bfdbfe', '#fbcfe8'];
+  $('#confetti').innerHTML = Array.from({ length: 70 }, (_, i) =>
+    `<i style="left:${Math.random() * 100}%;background:${colors[i % colors.length]};animation-delay:${Math.random() * .4}s;animation-duration:${1.4 + Math.random()}s"></i>`).join('');
+  setTimeout(() => $('#confetti').innerHTML = '', 2600);
+}
+
+const pickCard = (s, cls = '') => `
+  <div class="pick ${cls}"><div class="big-av">${esc(OA.initials(s.name))}</div><div class="nm">${esc(s.name)}</div>${s.no ? `<div class="no">No: ${esc(s.no)}</div>` : ''}</div>`;
+
+function go() {
+  if (rolling) return;
+  let p = pool();
+  if (S.noRepeat && !p.length && students().some(s => !S.absent[s.id])) {
+    OA.toast('Herkes seçildi, liste yeniden başlıyor 🔁'); S.picked = []; p = pool();
+  }
+  if (!p.length) return OA.toast('Seçilecek öğrenci yok');
+  const n = Math.min(S.count, p.length);
+  const chosen = [...p].sort(() => Math.random() - .5).slice(0, n);
+  rolling = true; $('#btnGo').disabled = true;
+  const box = $('#display');
+  let delay = 45, elapsed = 0;
+  const step = () => {
+    const shown = Array.from({ length: n }, () => p[Math.random() * p.length | 0]);
+    box.innerHTML = `<div class="picks ${n > 1 ? 'many' : ''}">${shown.map(s => pickCard(s, 'rolling')).join('')}</div>`;
+    beep(900 + Math.random() * 300, .03);
+    elapsed += delay; delay *= 1.12;
+    if (elapsed < 2300) setTimeout(step, delay);
+    else {
+      box.innerHTML = `<div class="picks ${n > 1 ? 'many' : ''}">${chosen.map(s => pickCard(s, 'done')).join('')}</div>`;
+      chime(); confetti();
+      S.picked.push(...chosen.map(s => s.id));
+      S.history.push({ names: chosen.map(s => s.name), t: new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) });
+      S.history = S.history.slice(-50);
+      save(); renderSide();
+      rolling = false; $('#btnGo').disabled = false;
+    }
+  };
+  step();
+}
+
+$('#btnGo').onclick = go;
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && !/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); go(); }
+});
+$('#cls').addEventListener('change', e => {
+  if (e.target.value === '__manage') return;
+  S.classId = e.target.value; S.picked = []; S.absent = {};
+  if (S.classId !== '__manual') OA.classes.setActive(S.classId);
+  save(); renderControls(); renderSide();
+});
+$('#manual').addEventListener('input', e => { S.manual = e.target.value; save(); renderSide(); });
+$('#countSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.count = +b.dataset.n; save(); renderControls(); } });
+$('#noRepeat').onchange = e => { S.noRepeat = e.target.checked; save(); renderSide(); };
+$('#sound').onchange = e => { S.sound = e.target.checked; save(); };
+$('#chips').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  const id = b.dataset.id;
+  S.absent[id] ? delete S.absent[id] : (S.absent[id] = 1);
+  save(); renderSide();
+});
+$('#btnReset').onclick = () => { S.picked = []; save(); renderSide(); $('#display').innerHTML = '<div class="idle"><b>🎲</b>Liste sıfırlandı. Hazır!</div>'; };
+$('#btnClearHist').onclick = () => { S.history = []; save(); renderSide(); };
+$('#btnFull').onclick = () => {
+  const st = $('#stage');
+  document.fullscreenElement ? document.exitFullscreen() : st.requestFullscreen?.();
+};
+
+renderControls(); renderSide();
+</script>
+</body>
+</html>

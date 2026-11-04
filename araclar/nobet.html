@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nöbet Çizelgesi · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .layout{display:grid;grid-template-columns:380px 1fr;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+  .side{display:flex;flex-direction:column;gap:16px}
+  .tlist{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto}
+  .tch{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:8px 10px;border-radius:12px;background:var(--surface-2);border:1.5px solid var(--line-2)}
+  .tch input{font:inherit;font-weight:800;border:1.5px solid transparent;background:transparent;color:var(--text);border-radius:7px;padding:2px 5px;min-width:0;width:100%}
+  .tch input.b{font-size:12px;font-weight:700;color:var(--muted)}
+  .tch input:focus{outline:none;border-color:var(--brand);background:var(--surface)}
+  .tch .cnt{font-weight:900;font-size:12.5px;color:var(--brand);text-align:right;white-space:nowrap}
+  .offs{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .offs span{font-size:11.5px;font-weight:800;color:var(--muted);margin-right:2px}
+  .offs button{font:inherit;font-size:11.5px;font-weight:800;border:1.5px solid var(--line);background:var(--surface);color:var(--text);border-radius:8px;padding:1px 7px;cursor:pointer}
+  .offs button.off{background:var(--bad-soft);border-color:var(--bad);color:var(--bad);text-decoration:line-through}
+  .places{display:flex;flex-direction:column;gap:6px}
+  .places .row{flex-wrap:nowrap}
+
+  .plan-wrap{overflow:auto}
+  table.plan{width:100%;border-collapse:separate;border-spacing:5px}
+  .plan th{font-size:13px;font-weight:900;color:var(--muted);padding:6px}
+  .plan th.day{text-align:left;color:var(--text);white-space:nowrap}
+  .plan th.day small{display:block;color:var(--muted);font-weight:700}
+  .plan td{background:var(--surface-2);border-radius:12px;padding:4px;border:1.5px solid var(--line-2)}
+  .plan td.yrd{background:var(--info-soft)}
+  .plan select{font:inherit;font-weight:800;width:100%;border:none;background:transparent;color:var(--text);padding:6px 4px;cursor:pointer;min-width:120px}
+  .plan select.empty{color:var(--bad)}
+  .plan td.conf{border-color:var(--bad);background:var(--bad-soft)}
+  .plan input{font:inherit;font-weight:700;width:100%;border:none;background:transparent;color:var(--text);padding:6px 4px;min-width:120px}
+
+  .p-head{text-align:center;margin-bottom:14px}
+  .p-head .o{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#555;font-size:13px}
+  .p-head h1{margin:4px 0 2px;font-size:22px}
+  .p-tbl{width:100%;border-collapse:collapse}
+  .p-tbl th,.p-tbl td{border:1px solid #888;padding:9px 8px;text-align:center;font-size:13.5px}
+  .p-tbl th{background:#f1f1f1}
+  .p-tbl td.d{font-weight:800;text-align:left;white-space:nowrap}
+  .p-note{margin-top:14px;font-size:13px;white-space:pre-line}
+  .p-sign{margin-top:46px;display:flex;justify-content:flex-end}
+  .p-sign div{text-align:center;min-width:220px;font-weight:700}
+  .p-sign .ln{border-bottom:1px dotted #444;height:36px;margin-bottom:6px}
+  @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="layout">
+    <aside class="side">
+      <div class="panel">
+        <h2><span><span class="h-ic">🧑‍🏫</span> Öğretmenler</span><span class="row"><button class="btn sm" id="btnPaste">📋 Yapıştır</button><button class="btn sm" id="btnAddT">+ Ekle</button></span></h2>
+        <p class="small" style="margin:0 0 8px">Öğretmenin nöbet tutamayacağı günlere tıklayın (kırmızı = müsait değil).</p>
+        <div class="tlist" id="tlist"></div>
+      </div>
+      <div class="panel">
+        <h2><span><span class="h-ic">📍</span> Nöbet yerleri</span><button class="btn sm" id="btnAddP">+ Yer</button></h2>
+        <div class="places" id="places"></div>
+        <div class="stack" style="margin-top:12px">
+          <div class="field">Günler<div class="seg" id="daysSeg"><button data-v="5">Pzt–Cuma</button><button data-v="6">Pzt–Cmt</button></div></div>
+          <div class="checks"><label><input type="checkbox" id="yrd"> Nöbetçi müdür yardımcısı sütunu</label></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Kâğıt bilgileri</span></h2>
+        <div class="stack">
+          <label class="field">Okul adı<input class="input" data-k="okul" placeholder="ör. Atatürk Ortaokulu"></label>
+          <label class="field">Başlık<input class="input" data-k="title"></label>
+          <label class="field">Geçerlilik<input class="input" data-k="donem" placeholder="ör. 2026-2027 1. Dönem / 03.11.2026 tarihinden itibaren"></label>
+          <label class="field">Okul müdürü<input class="input" data-k="mudur" placeholder="İmza için ad soyad"></label>
+          <label class="field">Not<textarea class="input" data-k="note" rows="2" placeholder="ör. Nöbetçi öğretmenler 08.15'te görev yerinde bulunur."></textarea></label>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <h2><span><span class="h-ic">🗓️</span> Haftalık nöbet çizelgesi</span>
+        <span class="row"><button class="btn primary" id="btnDist">🔀 Otomatik Dağıt</button><button class="btn" id="btnPrint">🖨️ Yazdır / PDF</button><button class="btn sm danger" id="btnClear">Temizle</button></span></h2>
+      <p class="small" style="margin:0 0 10px">Otomatik dağıtım nöbetleri eşit paylaştırır, müsait olmayan günleri ve aynı gün iki yerde olmayı engeller. Kutulardan elle de değiştirebilirsiniz.</p>
+      <div class="plan-wrap"><table class="plan" id="plan"></table></div>
+    </main>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🗓️', title: 'Nöbet Çizelgesi',
+  help: {
+    key: 'nobet', emoji: '🗓️', title: 'Bu bir öğretmen nöbet çizelgesi aracıdır',
+    intro: 'Öğretmen nöbetlerini günlere ve nöbet yerlerine adil şekilde dağıtır. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🧑‍🏫', title: 'Öğretmenleri ekleyin', text: 'Ad ve branşlarını yazın ya da listeyi toplu yapıştırın. Nöbet tutamayacakları günlere tıklayarak işaretleyin.' },
+      { icon: '📍', title: 'Nöbet yerlerini yazın', text: 'Bahçe, katlar, kantin gibi yerleri ve her yerde kaç öğretmen olacağını belirleyin.' },
+      { icon: '🔀', title: '"Otomatik Dağıt"a basın', text: 'Nöbetler eşit paylaştırılır. Beğenmezseniz tekrar basın ya da kutulardan elle değiştirin.' },
+      { icon: '🖨️', title: 'Yazdırın', text: 'Okul adı, başlık ve müdür adını girip imzaya hazır çizelgeyi yazdırın.' }
+    ]
+  }
+});
+
+const KEY = 'oa.nobet';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const DAYS = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+const SHORT = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+let S = {
+  okul: '', title: 'Öğretmen Nöbet Çizelgesi', donem: '', mudur: '', note: '', days: 5, yrd: true,
+  teachers: [], places: [{ id: 'p1', name: 'Bahçe', n: 1 }, { id: 'p2', name: '1. Kat', n: 1 }, { id: 'p3', name: '2. Kat', n: 1 }],
+  plan: {}, yrdNames: {},
+  ...OA.store.get(KEY, {})
+};
+const save = () => OA.store.set(KEY, S);
+const tById = id => S.teachers.find(t => t.id === id);
+const slotKey = (d, p, i) => `${d}|${p}|${i}`;
+
+function counts() {
+  const c = {};
+  for (const [k, id] of Object.entries(S.plan)) { const [d] = k.split('|'); if (+d < S.days && id) c[id] = (c[id] || 0) + 1; }
+  return c;
+}
+
+function renderSide() {
+  const c = counts();
+  $('#tlist').innerHTML = S.teachers.map(t => `
+    <div class="tch" data-id="${t.id}">
+      <div><input value="${esc(t.name)}" data-f="name" placeholder="Ad Soyad"><input class="b" value="${esc(t.brans || '')}" data-f="brans" placeholder="Branş"></div>
+      <div><div class="cnt">${c[t.id] || 0} nöbet</div><button class="x" data-del title="Sil">✕</button></div>
+      <div class="offs"><span>Müsait değil:</span>${SHORT.slice(0, S.days).map((d, i) => `<button class="${t.off?.includes(i) ? 'off' : ''}" data-off="${i}">${d}</button>`).join('')}</div>
+    </div>`).join('') || '<div class="small">Henüz öğretmen eklenmedi.</div>';
+  $('#places').innerHTML = S.places.map(p => `
+    <div class="row" data-pid="${p.id}"><input class="input" value="${esc(p.name)}" data-pf="name"><input class="input num" type="number" min="1" max="4" value="${p.n}" data-pf="n" title="Bu yerde kaç öğretmen"><button class="x" data-pdel title="Sil">✕</button></div>`).join('');
+  document.querySelectorAll('#daysSeg button').forEach(b => b.classList.toggle('on', +b.dataset.v === +S.days));
+  $('#yrd').checked = S.yrd;
+  document.querySelectorAll('[data-k]').forEach(el => { if (document.activeElement !== el) el.value = S[el.dataset.k] || ''; });
+}
+
+function renderPlan() {
+  const opts = sel => '<option value="">— boş —</option>' + S.teachers.map(t => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${esc(t.name || '(adsız)')}</option>`).join('');
+  let html = `<thead><tr><th></th>${S.places.map(p => `<th colspan="${p.n}">${esc(p.name)}</th>`).join('')}${S.yrd ? '<th>Nöbetçi Müdür Yrd.</th>' : ''}</tr></thead><tbody>`;
+  for (let d = 0; d < S.days; d++) {
+    const dayIds = S.places.flatMap(p => Array.from({ length: p.n }, (_, i) => S.plan[slotKey(d, p.id, i)])).filter(Boolean);
+    html += `<tr><th class="day">${DAYS[d]}</th>`;
+    for (const p of S.places) for (let i = 0; i < p.n; i++) {
+      const id = S.plan[slotKey(d, p.id, i)], t = tById(id);
+      const conf = t && (t.off?.includes(d) || dayIds.filter(x => x === id).length > 1);
+      html += `<td class="${conf ? 'conf' : ''}" title="${conf ? 'Bu öğretmen bu gün müsait değil ya da aynı gün iki yerde' : ''}"><select class="${id ? '' : 'empty'}" data-slot="${slotKey(d, p.id, i)}">${opts(id)}</select></td>`;
+    }
+    if (S.yrd) html += `<td class="yrd"><input data-yrd="${d}" value="${esc(S.yrdNames[d] || '')}" placeholder="Ad soyad"></td>`;
+    html += '</tr>';
+  }
+  $('#plan').innerHTML = html + '</tbody>';
+}
+function renderAll() { renderSide(); renderPlan(); }
+
+// Her boş kutuya o gün müsait, o gün henüz nöbeti olmayan ve en az nöbeti olan öğretmen atanır
+function distribute() {
+  const active = S.teachers.filter(t => t.name.trim());
+  if (!active.length) return OA.toast('Önce öğretmen ekleyin');
+  if (Object.values(S.plan).some(Boolean) && !confirm('Mevcut çizelge silinip yeniden dağıtılsın mı?')) return;
+  const plan = {}, c = {}, placeCount = {};
+  const slots = [];
+  for (let d = 0; d < S.days; d++) for (const p of S.places) for (let i = 0; i < p.n; i++) slots.push([d, p.id, i]);
+  // Günleri karıştırmak aynı öğretmenin hep pazartesiye düşmesini engeller
+  const dayOrder = [...Array(S.days).keys()].sort(() => Math.random() - .5);
+  slots.sort((a, b) => dayOrder.indexOf(a[0]) - dayOrder.indexOf(b[0]));
+  let empty = 0;
+  for (const [d, pid, i] of slots) {
+    const usedToday = new Set(Object.entries(plan).filter(([k]) => +k.split('|')[0] === d).map(([, v]) => v));
+    const cand = active.filter(t => !t.off?.includes(d) && !usedToday.has(t.id))
+      .sort((a, b) => (c[a.id] || 0) - (c[b.id] || 0) || (placeCount[a.id + pid] || 0) - (placeCount[b.id + pid] || 0) || Math.random() - .5);
+    const t = cand[0];
+    if (!t) { empty++; continue; }
+    plan[slotKey(d, pid, i)] = t.id;
+    c[t.id] = (c[t.id] || 0) + 1; placeCount[t.id + pid] = (placeCount[t.id + pid] || 0) + 1;
+  }
+  S.plan = plan; save(); renderAll();
+  OA.toast(empty ? `${empty} kutu için müsait öğretmen bulunamadı` : 'Nöbetler dağıtıldı ✔');
+}
+
+// ---------- Etkileşim ----------
+$('#tlist').addEventListener('input', e => {
+  const t = tById(e.target.closest('.tch').dataset.id);
+  t[e.target.dataset.f] = e.target.value; save(); renderPlan();
+});
+$('#tlist').addEventListener('click', e => {
+  const row = e.target.closest('.tch'); if (!row) return;
+  const t = tById(row.dataset.id);
+  if (e.target.dataset.off != null) {
+    const d = +e.target.dataset.off; t.off = t.off || [];
+    t.off = t.off.includes(d) ? t.off.filter(x => x !== d) : [...t.off, d];
+  } else if (e.target.dataset.del != null) {
+    if (!confirm(`${t.name || 'Bu öğretmen'} silinsin mi?`)) return;
+    S.teachers = S.teachers.filter(x => x !== t);
+    for (const k in S.plan) if (S.plan[k] === t.id) delete S.plan[k];
+  } else return;
+  save(); renderAll();
+});
+$('#btnAddT').onclick = () => {
+  S.teachers.push({ id: OA.uid(), name: '', brans: '', off: [] }); save(); renderAll();
+  $('#tlist').lastElementChild.querySelector('input').focus();
+};
+$('#btnPaste').onclick = () => {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back';
+  wrap.innerHTML = `
+    <div class="modal">
+      <div class="modal-hero"><div class="modal-emoji">📋</div><div><div class="eyebrow">Toplu ekle</div><h2>Öğretmen listesini yapıştırın</h2></div></div>
+      <p class="modal-intro">Her satıra bir öğretmen. Branşı da eklemek için adın yanına sekme ya da " - " koyun (ör. Ayşe Yılmaz - Matematik).</p>
+      <textarea class="input" rows="10"></textarea>
+      <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Ekle</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('textarea').focus();
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const lines = wrap.querySelector('textarea').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (const l of lines) { const [name, brans = ''] = l.split(/\t| - /).map(x => x.trim()); S.teachers.push({ id: OA.uid(), name, brans, off: [] }); }
+    wrap.remove(); save(); renderAll(); OA.toast(`${lines.length} öğretmen eklendi`);
+  };
+};
+$('#places').addEventListener('input', e => {
+  const p = S.places.find(x => x.id === e.target.closest('[data-pid]').dataset.pid);
+  p[e.target.dataset.pf] = e.target.dataset.pf === 'n' ? Math.max(1, Math.min(4, +e.target.value || 1)) : e.target.value;
+  save(); renderPlan();
+});
+$('#places').addEventListener('click', e => {
+  if (e.target.dataset.pdel == null) return;
+  const pid = e.target.closest('[data-pid]').dataset.pid;
+  S.places = S.places.filter(p => p.id !== pid);
+  for (const k in S.plan) if (k.split('|')[1] === pid) delete S.plan[k];
+  save(); renderAll();
+});
+$('#btnAddP').onclick = () => { S.places.push({ id: OA.uid(), name: 'Yeni yer', n: 1 }); save(); renderAll(); };
+$('#daysSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { S.days = +b.dataset.v; save(); renderAll(); } });
+$('#yrd').onchange = e => { S.yrd = e.target.checked; save(); renderPlan(); };
+document.querySelectorAll('[data-k]').forEach(el => el.addEventListener('input', () => { S[el.dataset.k] = el.value; save(); }));
+$('#plan').addEventListener('change', e => {
+  if (e.target.dataset.slot) { S.plan[e.target.dataset.slot] = e.target.value; save(); renderAll(); }
+});
+$('#plan').addEventListener('input', e => { if (e.target.dataset.yrd != null) { S.yrdNames[e.target.dataset.yrd] = e.target.value; save(); } });
+$('#btnDist').onclick = distribute;
+$('#btnClear').onclick = () => { if (confirm('Çizelgedeki tüm atamalar silinsin mi?')) { S.plan = {}; save(); renderAll(); } };
+
+$('#btnPrint').onclick = () => {
+  let rows = '';
+  for (let d = 0; d < S.days; d++) {
+    rows += `<tr><td class="d">${DAYS[d]}</td>${S.places.map(p => `<td>${Array.from({ length: p.n }, (_, i) => esc(tById(S.plan[slotKey(d, p.id, i)])?.name || '')).filter(Boolean).join('<br>')}</td>`).join('')}${S.yrd ? `<td>${esc(S.yrdNames[d] || '')}</td>` : ''}</tr>`;
+  }
+  OA.renderPaper(null, `
+    <div class="paper ${S.places.length > 4 ? 'land' : ''}">
+      <div class="p-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${esc(S.title)}</h1>${S.donem ? `<div>${esc(S.donem)}</div>` : ''}</div>
+      <table class="p-tbl"><thead><tr><th>Gün</th>${S.places.map(p => `<th>${esc(p.name)}</th>`).join('')}${S.yrd ? '<th>Nöbetçi Müdür Yrd.</th>' : ''}</tr></thead><tbody>${rows}</tbody></table>
+      ${S.note ? `<div class="p-note">${esc(S.note)}</div>` : ''}
+      <div class="p-sign"><div><div>${new Date().toLocaleDateString('tr-TR')}</div><div class="ln"></div>${esc(S.mudur) || '&nbsp;'}<br><small>Okul Müdürü</small></div></div>
+    </div>`, { orient: S.places.length > 4 ? 'landscape' : 'portrait', margin: '14mm' });
+  window.print();
+};
+
+renderAll();
+</script>
+</body>
+</html>

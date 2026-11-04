@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sınav Oturma Planı · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .layout{display:grid;grid-template-columns:350px 1fr;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+  .side{display:flex;flex-direction:column;gap:16px}
+  .clsbox{display:flex;flex-direction:column;gap:6px}
+  .clsbox label{display:flex;align-items:center;gap:8px;font-weight:800;padding:7px 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface-2);cursor:pointer}
+  .clsbox label:has(input:checked){border-color:var(--cc);background:color-mix(in srgb,var(--cc) 12%,var(--surface))}
+  .clsbox input{accent-color:var(--brand)}
+  .clsbox i{width:12px;height:12px;border-radius:4px;background:var(--cc);flex:none}
+  .clsbox small{margin-left:auto;color:var(--muted)}
+  .salon{display:grid;grid-template-columns:1fr 54px 54px auto 26px;gap:5px;align-items:center;margin-bottom:6px}
+  .salon .input{padding:6px 7px}
+  .salon .input.num{width:54px}
+  .salon .seg button{padding:5px 8px;font-size:12.5px}
+  .sal-head{display:grid;grid-template-columns:1fr 54px 54px auto 26px;gap:5px;font-size:11.5px;font-weight:800;color:var(--muted);margin-bottom:4px}
+  .cap{margin-top:10px;font-weight:800;font-size:13.5px}
+
+  .tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .mix{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+  .mix span{font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--cc) 18%,var(--surface));border:1.5px solid var(--cc)}
+  .room{overflow:auto;padding-bottom:6px}
+  .board{width:min(60%,480px);margin:0 auto 18px;background:#2f5a43;color:#fff;text-align:center;border-radius:8px;padding:8px;letter-spacing:5px;font-weight:900}
+  .rows{display:flex;flex-direction:column;gap:10px;width:max-content;margin:0 auto}
+  .drow{display:flex;gap:26px;align-items:center}
+  .drow .rl{width:20px;color:var(--muted);font-weight:800;font-size:12px;text-align:right}
+  .desk{display:flex;gap:3px;padding:4px;border-radius:12px;background:var(--line-2)}
+  .seat{width:132px;height:58px;border-radius:9px;background:var(--surface);border:1.5px solid var(--line);border-left:6px solid var(--cc,var(--line));padding:4px 7px;cursor:pointer;position:relative;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  .seat b{font-size:12.5px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seat small{font-size:11px;color:var(--muted);font-weight:800}
+  .seat .sn{position:absolute;top:3px;right:6px;font-size:10px;font-weight:900;color:var(--muted)}
+  .seat.empty{border-style:dashed;border-left-width:1.5px;color:var(--muted);font-weight:800;font-size:12px;align-items:center}
+  .seat.conf{box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 55%,transparent)}
+  .seat.sel{outline:3px solid var(--brand);outline-offset:1px}
+  .empty-state{text-align:center;padding:50px 16px;color:var(--muted);font-weight:700}
+  .empty-state .big{font-size:46px}
+  @media (max-width:980px){.layout{grid-template-columns:1fr}}
+
+  /* Kâğıt */
+  .p-head{text-align:center;margin-bottom:12px}
+  .p-head .o{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#555;font-size:12px}
+  .p-head h1{margin:2px 0 4px;font-size:20px}
+  .p-head .salon-name{display:inline-block;margin-top:6px;font-size:22px;font-weight:900;border:2px solid #333;border-radius:8px;padding:2px 16px}
+  .p-meta{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12.5px}
+  .p-board{width:55%;margin:0 auto 14px;text-align:center;border:2px solid #333;border-radius:6px;padding:5px;font-weight:900;letter-spacing:4px}
+  .p-rows{display:flex;flex-direction:column;gap:7px;align-items:center}
+  .p-drow{display:flex;gap:16px}
+  .p-desk{display:flex;border:1.5px solid #333;border-radius:4px}
+  .p-seat{border-right:1px solid #999;padding:3px 4px;height:46px;display:flex;flex-direction:column;justify-content:center;text-align:center;overflow:hidden}
+  .p-seat:last-child{border-right:none}
+  .p-seat b{font-size:10.5px;line-height:1.15}
+  .p-seat small{font-size:9.5px;color:#444}
+  .p-tbl{width:100%;border-collapse:collapse;font-size:12px}
+  .p-tbl th,.p-tbl td{border:1px solid #888;padding:3px 6px;text-align:center}
+  .p-tbl th{background:#f0f0f0}
+  .p-tbl td.l{text-align:left}
+  .p-tbl.tall td{padding:9px 6px}
+  .p-tbl.door td,.p-tbl.door th{padding:2px 6px;line-height:1.3}
+  .p-sign{display:flex;justify-content:space-between;gap:30px;margin-top:30px;break-inside:avoid}
+  .p-sign div{flex:1;text-align:center;font-size:12.5px;font-weight:700}
+  .p-sign .ln{border-bottom:1px dotted #444;height:30px;margin:0 18% 4px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="layout">
+    <aside class="side">
+      <div class="panel">
+        <h2><span><span class="h-ic">🏫</span> Sınava girecek sınıflar</span></h2>
+        <div class="clsbox" id="clsbox"></div>
+      </div>
+      <div class="panel">
+        <h2><span><span class="h-ic">🚪</span> Sınav salonları</span><button class="btn sm" id="btnAddS">+ Salon</button></h2>
+        <div class="sal-head"><span>Salon adı</span><span>Sıra</span><span>Sütun</span><span>Sırada</span><span></span></div>
+        <div id="salons"></div>
+        <div class="cap" id="cap"></div>
+        <p class="small" style="margin:6px 0 0">Sıra: önden arkaya kaç sıra · Sütun: yan yana kaç sıra · Sırada: bir sırada kaç öğrenci.</p>
+      </div>
+      <div class="panel">
+        <h2><span><span class="h-ic">📝</span> Sınav bilgileri</span></h2>
+        <div class="stack">
+          <label class="field">Okul adı<input class="input" data-k="okul"></label>
+          <label class="field">Sınav adı<input class="input" data-k="sinav"></label>
+          <label class="field">Ders<input class="input" data-k="ders" placeholder="ör. Matematik"></label>
+          <div class="grid2"><label class="field">Tarih<input class="input" type="date" data-k="tarih"></label><label class="field">Saat<input class="input" data-k="saat" placeholder="ör. 10.00"></label></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="tabs">
+        <button class="btn primary" id="btnDist">🔀 Otomatik Dağıt</button>
+        <div class="seg" id="tabs"></div>
+        <span class="spacer"></span>
+        <button class="btn" id="btnPrint">🖨️ Yazdır</button>
+      </div>
+      <div id="view"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🪑', title: 'Ortak Sınav Oturma Planı',
+  help: {
+    key: 'sinav-plani', emoji: '🪑', title: 'Bu bir ortak sınav oturma planı aracıdır',
+    intro: 'Birden çok sınıfı sınav salonlarına karıştırarak yerleştirir; aynı sınıftan öğrenciler yan yana oturmaz. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🏫', title: 'Sınıfları seçin', text: 'Sınava girecek sınıfları Sınıflarım\'dan işaretleyin. Her sınıfın kendi rengi olur.' },
+      { icon: '🚪', title: 'Salonları tanımlayın', text: 'Her salonun adını, sıra ve sütun sayısını, bir sırada kaç öğrenci oturduğunu girin. Kapasite yetmezse uyarılırsınız.' },
+      { icon: '🔀', title: '"Otomatik Dağıt"a basın', text: 'Öğrenciler salonlara dengeli dağıtılır; aynı sınıftan öğrenciler yan yana, önlü arkalı oturmaz. Kırmızı çerçeve kaçınılmaz kalan yakınlıkları gösterir.' },
+      { icon: '🔁', title: 'Elle değiştirin', text: 'Bir koltuğa, sonra diğerine tıklayarak iki öğrencinin yerini değiştirin.' },
+      { icon: '🖨️', title: 'Yazdırın', text: 'Her salon için oturma planı, kapıya asılacak liste ve imza çizelgesi; ayrıca tüm öğrencilerin nerede oturduğunu gösteren genel liste.' }
+    ]
+  }
+});
+
+const KEY = 'oa.sinavPlani';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+let S = {
+  okul: '', sinav: '1. Dönem Ortak Sınavı', ders: '', tarih: new Date().toISOString().slice(0, 10), saat: '',
+  classes: [], salons: [{ id: 's1', name: 'Salon 1', rows: 6, cols: 3, per: 2 }, { id: 's2', name: 'Salon 2', rows: 6, cols: 3, per: 2 }],
+  plan: {}, view: 's1', pr: { grid: true, door: true, sign: true, general: true, byClass: true }, prSkip: [], listCls: '',
+  ...OA.store.get(KEY, {})
+};
+const save = () => OA.store.set(KEY, S);
+let selSeat = null;
+
+const allClasses = () => OA.classes.list();
+const colorOf = cid => COLORS[Math.max(0, allClasses().findIndex(c => c.id === cid)) % COLORS.length];
+function pool() {
+  return allClasses().filter(c => S.classes.includes(c.id))
+    .flatMap(c => c.students.map(s => ({ key: c.id + '|' + s.id, cid: c.id, cls: c.name, name: s.name, no: s.no })));
+}
+const byKey = () => Object.fromEntries(pool().map(p => [p.key, p]));
+const cap = s => s.rows * s.cols * s.per;
+const seatPos = (s, i) => { const perRow = s.cols * s.per, r = Math.floor(i / perRow), c = Math.floor(i % perRow / s.per), k = i % s.per; return { r, c, k, x: c * (s.per + .7) + k, y: r }; };
+
+// Komşu koltuk çiftleri ve ağırlıkları: aynı sıra > yan yana > önlü arkalı > çapraz
+function neighbors(s) {
+  const n = cap(s), P = Array.from({ length: n }, (_, i) => seatPos(s, i)), out = [];
+  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+    const a = P[i], b = P[j], dx = Math.abs(a.x - b.x), dy = Math.abs(a.y - b.y);
+    let w = 0;
+    if (dy === 0 && a.c === b.c) w = 10;
+    else if (dy === 0 && dx <= 1.71) w = 4;
+    else if (dy === 1 && dx < .3) w = 3;
+    else if (dy === 1 && dx <= 1.71) w = 1;
+    if (w) out.push([i, j, w]);
+  }
+  return out;
+}
+
+function distribute() {
+  const list = pool();
+  if (!list.length) return OA.toast('Önce sınava girecek sınıfları seçin');
+  const total = S.salons.reduce((n, s) => n + cap(s), 0);
+  if (list.length > total) return OA.toast(`Kapasite yetmiyor: ${list.length} öğrenci, ${total} koltuk. Salon ekleyin.`);
+  if (Object.keys(S.plan).length && !confirm('Mevcut plan silinip yeniden dağıtılsın mı?')) return;
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const groups = Object.values(list.reduce((g, p) => ((g[p.cid] = g[p.cid] || []).push(p), g), {})).map(shuffle).sort((a, b) => b.length - a.length);
+  // Salon kotaları kapasiteyle orantılı
+  const quota = S.salons.map(s => Math.floor(list.length * cap(s) / total));
+  let rest = list.length - quota.reduce((a, b) => a + b, 0);
+  for (let i = 0; rest > 0; i = (i + 1) % S.salons.length) if (quota[i] < cap(S.salons[i])) { quota[i]++; rest--; }
+  // Her sınıf salonlara kotalarıyla orantılı bölünür; böylece her salonda tüm sınıflardan karışık öğrenci olur
+  const bins = S.salons.map(() => []), mixCount = S.salons.map(() => ({}));
+  for (const g of groups) for (const p of g) {
+    let best = -1, bestScore = Infinity;
+    S.salons.forEach((s, i) => {
+      if (bins[i].length >= quota[i]) return;
+      const score = ((mixCount[i][p.cid] || 0) + 1) / quota[i] + bins[i].length / quota[i] * .01;
+      if (score < bestScore) { bestScore = score; best = i; }
+    });
+    bins[best].push(p.key); mixCount[best][p.cid] = (mixCount[best][p.cid] || 0) + 1;
+  }
+
+  const map = byKey();
+  S.plan = {};
+  S.salons.forEach((s, idx) => {
+    const n = cap(s), seats = new Array(n).fill(null);
+    // Boş koltuk kalacaksa önce her sıranın ilk koltuğu dolsun
+    const order = [...Array(n).keys()].sort((a, b) => seatPos(s, a).k - seatPos(s, b).k || a - b);
+    bins[idx].forEach((k, i) => seats[order[i]] = k);
+    const nb = neighbors(s), adj = Array.from({ length: n }, () => []);
+    for (const [i, j, w] of nb) { adj[i].push([j, w]); adj[j].push([i, w]); }
+    const cid = i => seats[i] && map[seats[i]].cid;
+    const local = i => { const c = cid(i); if (!c) return 0; let t = 0; for (const [j, w] of adj[i]) if (cid(j) === c) t += w; return t; };
+    for (let it = 0, N = 30000; it < N; it++) {
+      const T = 6 * Math.pow(.003, it / N);
+      const a = Math.random() * n | 0, b = Math.random() * n | 0;
+      if (a === b || (!seats[a] && !seats[b])) continue;
+      const before = local(a) + local(b);
+      [seats[a], seats[b]] = [seats[b], seats[a]];
+      const d = local(a) + local(b) - before;
+      if (d > 0 && Math.random() >= Math.exp(-d / T)) [seats[a], seats[b]] = [seats[b], seats[a]];
+    }
+    S.plan[s.id] = seats;
+  });
+  selSeat = null; save(); render();
+  const c = conflicts();
+  OA.toast(c ? `Dağıtıldı — ${c} yakın oturma kaçınılmaz kaldı` : 'Dağıtıldı — aynı sınıftan yan yana oturan yok ✔');
+}
+
+// Aynı sınıftan yan yana / önlü arkalı oturanlar (ağırlık ≥ 3)
+function conflictSeats(s) {
+  const seats = S.plan[s.id] || [], map = byKey(), bad = new Set();
+  for (const [i, j, w] of neighbors(s)) if (w >= 3 && seats[i] && seats[j] && map[seats[i]]?.cid === map[seats[j]]?.cid) { bad.add(i); bad.add(j); }
+  return bad;
+}
+const conflicts = () => S.salons.reduce((n, s) => n + conflictSeats(s).size, 0);
+
+// ---------- Çizim ----------
+function renderSide() {
+  const list = allClasses();
+  $('#clsbox').innerHTML = list.length ? list.map(c => `<label style="--cc:${colorOf(c.id)}"><input type="checkbox" data-cls="${c.id}" ${S.classes.includes(c.id) ? 'checked' : ''}><i></i>${esc(c.name)}<small>${c.students.length} öğrenci</small></label>`).join('')
+    : '<div class="small">Kayıtlı sınıf yok. <a href="siniflar.html">Sınıflarım</a> sayfasından ekleyin.</div>';
+  $('#salons').innerHTML = S.salons.map(s => `
+    <div class="salon" data-sid="${s.id}">
+      <input class="input" value="${esc(s.name)}" data-f="name">
+      <input class="input num" type="number" min="1" max="15" value="${s.rows}" data-f="rows">
+      <input class="input num" type="number" min="1" max="8" value="${s.cols}" data-f="cols">
+      <div class="seg">${[1, 2].map(p => `<button data-per="${p}" class="${s.per === p ? 'on' : ''}">${p}</button>`).join('')}</div>
+      <button class="x" data-del title="Salonu sil">✕</button>
+    </div>`).join('');
+  const total = S.salons.reduce((n, s) => n + cap(s), 0), n = pool().length;
+  $('#cap').innerHTML = `Kapasite: <b>${total}</b> koltuk · Öğrenci: <b>${n}</b> ${n > total ? '<span class="chip bad">Yetmiyor!</span>' : n ? '<span class="chip ok">Yeterli</span>' : ''}`;
+  document.querySelectorAll('[data-k]').forEach(el => { if (document.activeElement !== el) el.value = S[el.dataset.k] || ''; });
+}
+
+function renderView() {
+  if (!S.salons.find(s => s.id === S.view) && S.view !== 'list') S.view = S.salons[0]?.id;
+  $('#tabs').innerHTML = S.salons.map(s => `<button data-view="${s.id}" class="${S.view === s.id ? 'on' : ''}">${esc(s.name)} <small>(${(S.plan[s.id] || []).filter(Boolean).length})</small></button>`).join('') +
+    `<button data-view="list" class="${S.view === 'list' ? 'on' : ''}">📋 Genel liste</button>`;
+  const map = byKey();
+  if (!Object.keys(S.plan).length) {
+    $('#view').innerHTML = `<div class="empty-state"><div class="big">🪑</div>Sınıfları seçip salonları tanımlayın, sonra "Otomatik Dağıt"a basın.</div>`;
+    return;
+  }
+  if (S.view === 'list') {
+    const chosen = allClasses().filter(c => S.classes.includes(c.id));
+    if (S.listCls && !S.classes.includes(S.listCls)) S.listCls = '';
+    const rows = allPlaced().filter(x => !S.listCls || x.p.cid === S.listCls).sort((a, b) => a.p.cls.localeCompare(b.p.cls, 'tr') || (+a.p.no || 1e9) - (+b.p.no || 1e9));
+    $('#view').innerHTML = `<div class="seg" id="listSeg" style="margin-bottom:12px"><button data-lc="" class="${S.listCls ? '' : 'on'}">Tüm sınıflar</button>${chosen.map(c => `<button data-lc="${c.id}" class="${S.listCls === c.id ? 'on' : ''}">${esc(c.name)}</button>`).join('')}</div>
+      <div style="overflow:auto"><table class="tbl"><thead><tr><th>Sınıf</th><th>No</th><th>Ad Soyad</th><th>Salon</th><th>Sıra no</th></tr></thead>
+      <tbody>${rows.map(({ p, s, i }) => `<tr><td><span class="chip" style="background:color-mix(in srgb,${colorOf(p.cid)} 20%,transparent);color:inherit">${esc(p.cls)}</span></td><td>${esc(p.no)}</td><td><b>${esc(p.name)}</b></td><td>${esc(s.name)}</td><td>${i + 1}</td></tr>`).join('')}</tbody></table></div>`;
+    return;
+  }
+  const s = S.salons.find(x => x.id === S.view), seats = S.plan[s.id] || [], bad = conflictSeats(s);
+  const mix = {};
+  for (const k of seats) if (k && map[k]) mix[map[k].cid] = (mix[map[k].cid] || 0) + 1;
+  let html = `<div class="mix">${Object.entries(mix).map(([cid, n]) => `<span style="--cc:${colorOf(cid)}">${esc(OA.classes.get(cid)?.name)}: ${n}</span>`).join('')}${bad.size ? `<span style="--cc:var(--bad)">⚠️ ${bad.size} yakın oturma</span>` : ''}</div>
+    <div class="room"><div class="board">TAHTA</div><div class="rows">`;
+  for (let r = 0; r < s.rows; r++) {
+    html += `<div class="drow"><span class="rl">${r + 1}</span>`;
+    for (let c = 0; c < s.cols; c++) {
+      html += '<div class="desk">';
+      for (let k = 0; k < s.per; k++) {
+        const i = (r * s.cols + c) * s.per + k, p = map[seats[i]];
+        html += p
+          ? `<div class="seat ${bad.has(i) ? 'conf' : ''} ${selSeat === i ? 'sel' : ''}" data-i="${i}" style="--cc:${colorOf(p.cid)}" title="${esc(p.name)}"><span class="sn">${i + 1}</span><b>${esc(p.name)}</b><small>${esc(p.cls)} · ${esc(p.no)}</small></div>`
+          : `<div class="seat empty ${selSeat === i ? 'sel' : ''}" data-i="${i}"><span class="sn">${i + 1}</span>boş</div>`;
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  $('#view').innerHTML = html + '</div></div><p class="small" style="margin-top:10px">İki koltuğa sırayla tıklayarak öğrencilerin yerini değiştirebilirsiniz.</p>';
+}
+const allPlaced = () => { const map = byKey(), out = []; for (const s of S.salons) (S.plan[s.id] || []).forEach((k, i) => { if (k && map[k]) out.push({ p: map[k], s, i }); }); return out; };
+function render() { renderSide(); renderView(); }
+
+// ---------- Etkileşim ----------
+$('#clsbox').addEventListener('change', e => {
+  const id = e.target.dataset.cls; if (!id) return;
+  S.classes = e.target.checked ? [...S.classes, id] : S.classes.filter(x => x !== id);
+  save(); render();
+});
+$('#salons').addEventListener('input', e => {
+  const s = S.salons.find(x => x.id === e.target.closest('[data-sid]').dataset.sid), f = e.target.dataset.f;
+  s[f] = f === 'name' ? e.target.value : Math.max(1, Math.min(+e.target.max, +e.target.value || 1));
+  if (f !== 'name') delete S.plan[s.id];
+  save(); renderView(); if (f !== 'name') renderSide();
+});
+$('#salons').addEventListener('click', e => {
+  const row = e.target.closest('[data-sid]'); if (!row) return;
+  const s = S.salons.find(x => x.id === row.dataset.sid), b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.per) { s.per = +b.dataset.per; delete S.plan[s.id]; }
+  else if (b.dataset.del != null) { if (!confirm(`${s.name} silinsin mi?`)) return; S.salons = S.salons.filter(x => x !== s); delete S.plan[s.id]; }
+  else return;
+  save(); render();
+});
+$('#btnAddS').onclick = () => {
+  const last = S.salons[S.salons.length - 1] || { rows: 6, cols: 3, per: 2 };
+  const s = { id: OA.uid(), name: `Salon ${S.salons.length + 1}`, rows: last.rows, cols: last.cols, per: last.per };
+  S.salons.push(s); save(); render();
+};
+document.querySelectorAll('[data-k]').forEach(el => el.addEventListener('input', () => { S[el.dataset.k] = el.value; save(); }));
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) { S.view = b.dataset.view; selSeat = null; save(); renderView(); } });
+$('#view').addEventListener('click', e => {
+  const lc = e.target.closest('[data-lc]');
+  if (lc) { S.listCls = lc.dataset.lc; save(); renderView(); return; }
+  const seat = e.target.closest('.seat'); if (!seat) return;
+  const i = +seat.dataset.i, seats = S.plan[S.view];
+  if (selSeat == null) { selSeat = i; renderView(); return; }
+  if (selSeat !== i) [seats[selSeat], seats[i]] = [seats[i], seats[selSeat]];
+  selSeat = null; save(); renderView();
+});
+$('#btnDist').onclick = distribute;
+
+// ---------- Yazdırma ----------
+$('#btnPrint').onclick = () => {
+  if (!Object.keys(S.plan).length) return OA.toast('Önce öğrencileri dağıtın');
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  const opt = (k, l, d) => `<li><span class="step-n"><input type="checkbox" data-pr="${k}" ${S.pr[k] ? 'checked' : ''} style="width:20px;height:20px;accent-color:var(--brand)"></span><div><b>${l}</b><p>${d}</p></div></li>`;
+  wrap.innerHTML = `
+    <div class="modal">
+      <div class="modal-hero"><div class="modal-emoji">🖨️</div><div><div class="eyebrow">Yazdır</div><h2>Hangi sayfalar çıksın?</h2></div></div>
+      <ol class="steps">
+        ${opt('grid', 'Salon oturma planı', 'Her salon için koltuk koltuk yerleşim çizimi.')}
+        ${opt('door', 'Kapı listesi', 'Salon kapısına asılacak, alfabetik öğrenci ve sıra numarası listesi.')}
+        ${opt('sign', 'İmza çizelgesi', 'Gözetmenler için öğrenci imza listesi.')}
+        ${opt('general', 'Genel liste', 'Tüm öğrencilerin sınıf sınıf hangi salonda oturduğu (panoya asmak için).')}
+        ${opt('byClass', 'Sınıf listeleri', 'Her sınıf için ayrı sayfa: o sınıfın öğrencilerinin salonu ve sıra numarası (sınıf kapısına ya da sınıf öğretmenine).')}
+      </ol>
+      <div class="checks" id="prCls" style="margin:-6px 0 16px 50px">${allClasses().filter(c => S.classes.includes(c.id)).map(c => `<label><input type="checkbox" value="${c.id}" ${(S.prSkip || []).includes(c.id) ? '' : 'checked'}> ${esc(c.name)}</label>`).join('')}</div>
+      <div class="modal-foot"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>🖨️ Yazdır</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    wrap.querySelectorAll('[data-pr]').forEach(c => S.pr[c.dataset.pr] = c.checked);
+    S.prSkip = [...wrap.querySelectorAll('#prCls input:not(:checked)')].map(i => i.value);
+    save(); wrap.remove();
+    printPages();
+  };
+};
+
+function printPages() {
+  const map = byKey(), pages = [];
+  const meta = `<div class="p-meta">${[S.sinav, S.ders, OA.trDate(S.tarih), S.saat].filter(Boolean).map(x => `<span><b>${esc(x)}</b></span>`).join('')}</div>`;
+  const head = (title, salon) => `<div class="p-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${title}</h1>${meta}${salon ? `<div class="salon-name">${esc(salon)}</div>` : ''}</div>`;
+  for (const s of S.salons) {
+    const seats = S.plan[s.id] || [];
+    const placed = seats.map((k, i) => ({ p: map[k], i })).filter(x => x.p);
+    if (!placed.length) continue;
+    if (S.pr.grid) {
+      const w = Math.min(120, Math.floor((680 - (s.cols - 1) * 16) / (s.cols * s.per)));
+      let g = '';
+      for (let r = 0; r < s.rows; r++) {
+        g += '<div class="p-drow">';
+        for (let c = 0; c < s.cols; c++) {
+          g += '<div class="p-desk">';
+          for (let k = 0; k < s.per; k++) {
+            const i = (r * s.cols + c) * s.per + k, p = map[seats[i]];
+            g += `<div class="p-seat" style="width:${w}px">${p ? `<b>${esc(p.name)}</b><small>${esc(p.cls)} · ${esc(p.no)} · <b>${i + 1}</b></small>` : `<small>${i + 1}</small>`}</div>`;
+          }
+          g += '</div>';
+        }
+        g += '</div>';
+      }
+      pages.push(`<div class="paper">${head('Sınav Oturma Planı', s.name)}<div class="p-board">TAHTA</div><div class="p-rows">${g}</div></div>`);
+    }
+    const alpha = [...placed].sort((a, b) => a.p.name.localeCompare(b.p.name, 'tr'));
+    if (S.pr.door) pages.push(`<div class="paper">${head('Salon Öğrenci Listesi', s.name)}
+      <table class="p-tbl door"><thead><tr><th>#</th><th>Ad Soyad</th><th>Sınıf</th><th>No</th><th>Sıra no</th></tr></thead>
+      <tbody>${alpha.map((x, n) => `<tr><td>${n + 1}</td><td class="l"><b>${esc(x.p.name)}</b></td><td>${esc(x.p.cls)}</td><td>${esc(x.p.no)}</td><td><b>${x.i + 1}</b></td></tr>`).join('')}</tbody></table></div>`);
+    if (S.pr.sign) pages.push(`<div class="paper">${head('Sınav İmza Çizelgesi', s.name)}
+      <table class="p-tbl tall"><thead><tr><th>Sıra no</th><th>Ad Soyad</th><th>Sınıf</th><th>No</th><th style="width:30%">İmza</th></tr></thead>
+      <tbody>${placed.map(x => `<tr><td>${x.i + 1}</td><td class="l">${esc(x.p.name)}</td><td>${esc(x.p.cls)}</td><td>${esc(x.p.no)}</td><td></td></tr>`).join('')}</tbody></table>
+      <div class="p-sign"><div><div class="ln"></div>1. Gözetmen</div><div><div class="ln"></div>2. Gözetmen</div></div></div>`);
+  }
+  if (S.pr.general) {
+    const rows = allPlaced().sort((a, b) => a.p.cls.localeCompare(b.p.cls, 'tr') || (+a.p.no || 1e9) - (+b.p.no || 1e9));
+    pages.push(`<div class="paper">${head('Öğrenci Salon Listesi')}
+      <table class="p-tbl"><thead><tr><th>Sınıf</th><th>No</th><th>Ad Soyad</th><th>Salon</th><th>Sıra no</th></tr></thead>
+      <tbody>${rows.map(({ p, s, i }) => `<tr><td>${esc(p.cls)}</td><td>${esc(p.no)}</td><td class="l">${esc(p.name)}</td><td>${esc(s.name)}</td><td>${i + 1}</td></tr>`).join('')}</tbody></table></div>`);
+  }
+  if (S.pr.byClass) {
+    for (const c of allClasses().filter(c => S.classes.includes(c.id) && !(S.prSkip || []).includes(c.id))) {
+      const rows = allPlaced().filter(x => x.p.cid === c.id).sort((a, b) => (+a.p.no || 1e9) - (+b.p.no || 1e9) || a.p.name.localeCompare(b.p.name, 'tr'));
+      if (!rows.length) continue;
+      pages.push(`<div class="paper">${head('Sınıf Sınav Yerleri', c.name + ' Sınıfı')}
+        <table class="p-tbl door"><thead><tr><th>#</th><th>No</th><th>Ad Soyad</th><th>Salon</th><th>Sıra no</th></tr></thead>
+        <tbody>${rows.map(({ p, s, i }, n) => `<tr><td>${n + 1}</td><td>${esc(p.no)}</td><td class="l"><b>${esc(p.name)}</b></td><td>${esc(s.name)}</td><td><b>${i + 1}</b></td></tr>`).join('')}</tbody></table></div>`);
+    }
+  }
+  if (!pages.length) return OA.toast('Yazdırılacak sayfa seçilmedi');
+  OA.renderPaper(null, pages.join(''), { margin: '10mm' });
+  window.print();
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Belge ve Sertifika · Okul Araçları</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=Playfair+Display:wght@700;900&family=Great+Vibes&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .opts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .opt{font:inherit;font-weight:800;font-size:13px;border:1.5px solid var(--line);background:var(--surface-2);border-radius:12px;padding:8px;cursor:pointer;color:var(--text);text-align:left;display:flex;gap:8px;align-items:center}
+  .opt.on{border-color:var(--brand);background:var(--brand-soft);color:var(--brand-ink)}
+  .opt span{font-size:20px}
+  .accents{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .accents button{width:28px;height:28px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
+  .accents button.on{box-shadow:0 0 0 3px var(--text)}
+  .accents input{width:38px;height:30px;border:1.5px solid var(--line);border-radius:8px;padding:2px;background:var(--surface-2)}
+  .emojis{display:flex;gap:5px;flex-wrap:wrap}
+  .emojis button{font-size:18px;width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface-2);cursor:pointer}
+  .emojis button.on{border-color:var(--brand);background:var(--brand-soft)}
+  .stu-list{max-height:220px;overflow:auto;border:1.5px solid var(--line-2);border-radius:12px;padding:6px}
+  .stu-list label{display:flex;gap:8px;align-items:center;padding:3px 4px;font-weight:700;font-size:13.5px;cursor:pointer}
+  .stu-list input{accent-color:var(--brand)}
+  .pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px;font-weight:800}
+
+  /* ---------- Belge ---------- */
+  .paper.cert{width:1123px;height:794px;min-height:0;padding:0;overflow:hidden;--acc:#b8860b;display:block}
+  .cert .inner{position:absolute;inset:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 80px}
+  .cert .okul{font-weight:800;letter-spacing:.16em;text-transform:uppercase;font-size:15px;color:#555}
+  .cert .badge{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font-size:44px;margin:14px 0 6px;background:color-mix(in srgb,var(--acc) 16%,#fff);border:3px solid var(--acc)}
+  .cert .title{font-size:62px;font-weight:900;line-height:1.05;color:var(--acc);margin:6px 0}
+  .cert .sub{font-size:18px;color:#555;font-weight:700;margin-top:6px}
+  .cert .name{font-size:54px;margin:4px 0 2px;color:#1f1f1f;line-height:1.15}
+  .cert .cls{font-weight:800;color:#666;font-size:16px}
+  .cert .text{font-size:18px;line-height:1.6;max-width:760px;margin:14px auto 0;color:#333}
+  .cert .foot{display:flex;justify-content:space-around;align-items:flex-end;width:100%;margin-top:34px;gap:30px}
+  .cert .sg{min-width:200px;text-align:center;font-size:15px}
+  .cert .sg .ln{border-top:1.5px solid #555;margin-bottom:6px;margin-top:40px}
+  .cert .sg b{display:block}
+  .cert .sg small{color:#666;font-weight:700}
+  .cert .date{font-weight:800;color:#555;font-size:15px}
+
+  .d-klasik{background:#fffaf0;border:16px solid var(--acc)}
+  .d-klasik .inner{border:3px double var(--acc);outline:1px solid color-mix(in srgb,var(--acc) 50%,#fff);outline-offset:-10px}
+  .d-klasik .title{font-family:"Playfair Display",serif;letter-spacing:.04em}
+  .d-klasik .name{font-family:"Great Vibes",cursive;font-size:66px}
+  .d-klasik .text,.d-klasik .sub{font-family:"Playfair Display",serif;font-weight:700}
+  .d-klasik .orn{position:absolute;font-size:38px;color:var(--acc)}
+
+  .d-modern{background:#fff}
+  .d-modern::before{content:"";position:absolute;left:0;top:0;bottom:0;width:90px;background:linear-gradient(180deg,var(--acc),color-mix(in srgb,var(--acc) 50%,#000))}
+  .d-modern::after{content:"";position:absolute;right:-120px;bottom:-120px;width:340px;height:340px;border-radius:50%;background:color-mix(in srgb,var(--acc) 12%,#fff)}
+  .d-modern .inner{left:120px;z-index:1}
+  .d-modern .title{text-transform:uppercase;letter-spacing:.12em;font-size:52px}
+  .d-modern .name{font-weight:900;color:var(--acc)}
+
+  .d-cocuk{background:#fffdf5;border:14px dashed var(--acc);border-radius:40px;font-family:"Baloo 2","Nunito",sans-serif}
+  .d-cocuk .title{font-family:"Baloo 2",sans-serif;font-size:66px}
+  .d-cocuk .name{font-family:"Baloo 2",sans-serif;font-weight:800}
+  .d-cocuk .star{position:absolute;font-size:26px}
+
+  .d-resmi{background:#fff;border:3px solid var(--acc);font-family:"Times New Roman",Times,serif}
+  .d-resmi .inner{border:1px solid var(--acc);inset:20px}
+  .d-resmi .title{font-family:"Times New Roman",serif;font-size:52px;letter-spacing:.06em;text-transform:uppercase}
+  .d-resmi .name{font-family:"Times New Roman",serif;font-weight:700;font-size:46px}
+  .d-resmi .okul{font-family:"Times New Roman",serif;letter-spacing:.06em}
+  @media print{.print-holder .paper.cert{width:297mm;height:209mm;padding:0}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="doc-layout">
+    <div class="panel" id="form">
+      <div class="psec"><h3 class="sec-title">🏅 Belge türü</h3><div class="opts" id="types"></div></div>
+      <div class="psec"><h3 class="sec-title">🎨 Tasarım</h3><div class="opts" id="designs"></div>
+        <div class="field" style="margin-top:10px">Renk<div class="accents" id="accents"></div></div>
+        <div class="field" style="margin-top:10px">Rozet<div class="emojis" id="emojis"></div></div>
+      </div>
+      <div class="psec"><h3 class="sec-title">👤 Kime verilecek?</h3>
+        <div class="seg" id="modeSeg" style="margin-bottom:10px"><button data-mode="tek">Tek kişi</button><button data-mode="toplu">Toplu (liste)</button></div>
+        <div id="who"></div>
+      </div>
+      <div class="psec"><h3 class="sec-title">✍️ Metin</h3>
+        <div class="stack">
+          <label class="field">Okul adı<input class="input" data-k="okul" placeholder="ör. Atatürk Ortaokulu"></label>
+          <label class="field">Belge başlığı<input class="input" data-k="title"></label>
+          <label class="field">Hitap<input class="input" data-k="sub" placeholder="ör. Sayın / Sevgili"></label>
+          <label class="field" id="dereceBox">Derece<input class="input" data-k="derece" placeholder="ör. Birincilik"></label>
+          <label class="field">Açıklama <span class="small">({ad}, {sinif} ve {derece} kelimeleri otomatik dolar)</span><textarea class="input" rows="4" data-k="text"></textarea></label>
+          <label class="field">Tarih<input class="input" type="date" data-k="tarih"></label>
+          <div class="grid2">
+            <label class="field">1. imza adı<input class="input" data-k="s1n"></label>
+            <label class="field">1. imza unvanı<input class="input" data-k="s1t"></label>
+            <label class="field">2. imza adı<input class="input" data-k="s2n"></label>
+            <label class="field">2. imza unvanı<input class="input" data-k="s2t"></label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="doc-preview">
+      <div class="panel">
+        <h2><span><span class="h-ic">👀</span> Önizleme</span><span class="row"><span class="chip" id="cnt"></span><button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button></span></h2>
+        <div class="paper-stage" id="stage"></div>
+        <div class="pager" id="pager"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '🏅', title: 'Belge ve Sertifika',
+  help: {
+    key: 'sertifika', emoji: '🏅', title: 'Bu bir belge ve sertifika hazırlama aracıdır',
+    intro: 'Teşekkür, takdir, başarı ve katılım belgelerini tek tek ya da tüm sınıfa toplu hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🏅', title: 'Belge türünü seçin', text: 'Teşekkür, Takdir, Başarı, Katılım, Derece ya da Ayın Öğrencisi; başlık ve metin kendiliğinden gelir.' },
+      { icon: '🎨', title: 'Tasarımı seçin', text: 'Klasik, Modern, Çocuksu ya da Resmî tasarımlardan birini, rengi ve rozeti seçin.' },
+      { icon: '👥', title: 'Kişileri belirleyin', text: 'Tek kişi için adı yazın; toplu için Sınıflarım\'dan sınıf seçip istediğiniz öğrencileri işaretleyin. Her öğrenci için ayrı sayfa oluşur.' },
+      { icon: '🖨️', title: 'Yazdırın', text: 'Metni ve imzaları düzenleyip "Yazdır / PDF" ile yatay A4 olarak basın.' }
+    ]
+  }
+});
+
+const KEY = 'oa.sertifika';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const TYPES = {
+  tesekkur: ['🙏', 'Teşekkür', 'TEŞEKKÜR BELGESİ', 'Göstermiş olduğunuz üstün gayret ve başarılı çalışmalarınızdan dolayı teşekkür eder, başarılarınızın devamını dileriz.'],
+  takdir: ['🏆', 'Takdir', 'TAKDİR BELGESİ', 'Derslerinizdeki üstün başarınız ve örnek davranışlarınızdan dolayı sizi takdir eder, başarılarınızın devamını dileriz.'],
+  basari: ['⭐', 'Başarı', 'BAŞARI BELGESİ', 'Okulumuzda düzenlenen etkinlikte göstermiş olduğunuz başarıdan dolayı bu belgeyi almaya hak kazandınız. Tebrik ederiz.'],
+  katilim: ['🤝', 'Katılım', 'KATILIM BELGESİ', 'Okulumuzda düzenlenen etkinliğe katılımınız ve katkılarınız için teşekkür ederiz.'],
+  derece: ['🥇', 'Derece', 'BAŞARI BELGESİ', 'Okulumuzda düzenlenen yarışmada {derece} elde ederek bu belgeyi almaya hak kazandınız. Tebrik ederiz.'],
+  ayin: ['🌟', 'Ayın Öğrencisi', 'AYIN ÖĞRENCİSİ', 'Örnek davranışların, çalışkanlığın ve arkadaşlarına gösterdiğin saygı için bu ayın öğrencisi seçildin. Tebrikler!']
+};
+const DESIGNS = { klasik: ['📜', 'Klasik'], modern: ['🔷', 'Modern'], cocuk: ['🎈', 'Çocuksu'], resmi: ['🏛️', 'Resmî'] };
+const ACCENTS = ['#b8860b', '#1e3a8a', '#b91c1c', '#047857', '#7c3aed', '#ea580c', '#db2777', '#0f172a'];
+const EMOJIS = ['🏆', '🥇', '🥈', '🥉', '⭐', '🎖️', '🏅', '📚', '🎓', '🌟', '🙏', '🤝', '❤️', ''];
+let S = {
+  type: 'tesekkur', design: 'klasik', accent: '#b8860b', emoji: '🏆', mode: 'tek', okul: '', title: TYPES.tesekkur[2], sub: 'Sayın', text: TYPES.tesekkur[3],
+  derece: 'Birincilik', tarih: new Date().toISOString().slice(0, 10), s1n: '', s1t: 'Sınıf Öğretmeni', s2n: '', s2t: 'Okul Müdürü',
+  tekAd: '', tekSinif: '', classId: OA.classes.active()?.id || '', off: {}, manual: '', page: 0,
+  ...OA.store.get(KEY, {})
+};
+const save = () => OA.store.set(KEY, S);
+
+function people() {
+  if (S.mode === 'tek') return [{ name: S.tekAd, cls: S.tekSinif }];
+  const c = OA.classes.get(S.classId);
+  const fromClass = (c?.students || []).filter(s => !S.off[s.id]).map(s => ({ name: s.name, cls: c.name }));
+  const extra = S.manual.split(/\r?\n/).map(x => x.trim()).filter(Boolean).map(name => ({ name, cls: '' }));
+  return [...fromClass, ...extra];
+}
+
+function renderForm() {
+  $('#types').innerHTML = Object.entries(TYPES).map(([k, [ic, n]]) => `<button class="opt ${S.type === k ? 'on' : ''}" data-type="${k}"><span>${ic}</span>${n}</button>`).join('');
+  $('#designs').innerHTML = Object.entries(DESIGNS).map(([k, [ic, n]]) => `<button class="opt ${S.design === k ? 'on' : ''}" data-design="${k}"><span>${ic}</span>${n}</button>`).join('');
+  $('#accents').innerHTML = ACCENTS.map(a => `<button data-acc="${a}" class="${S.accent === a ? 'on' : ''}" style="background:${a}"></button>`).join('') + `<input type="color" data-k="accent" value="${S.accent}">`;
+  $('#emojis').innerHTML = EMOJIS.map(e => `<button data-emoji="${e}" class="${S.emoji === e ? 'on' : ''}">${e || '∅'}</button>`).join('');
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $('#dereceBox').style.display = S.type === 'derece' ? '' : 'none';
+  if (S.mode === 'tek') {
+    $('#who').innerHTML = `<div class="grid2"><label class="field">Ad Soyad<input class="input" data-k="tekAd"></label><label class="field">Sınıfı (isteğe bağlı)<input class="input" data-k="tekSinif"></label></div>`;
+  } else {
+    const c = OA.classes.get(S.classId);
+    $('#who').innerHTML = `
+      <select class="input" id="cls"></select>
+      ${c ? `<div class="row" style="margin:8px 0 4px"><button class="btn sm" id="allOn">Tümünü seç</button><button class="btn sm" id="allOff">Hiçbirini seçme</button></div>
+        <div class="stu-list">${c.students.map(s => `<label><input type="checkbox" data-sid="${s.id}" ${S.off[s.id] ? '' : 'checked'}> ${esc(s.name)}</label>`).join('')}</div>` : ''}
+      <label class="field" style="margin-top:8px">Listeye ek isimler (her satıra bir)<textarea class="input" rows="2" data-k="manual"></textarea></label>`;
+    OA.fillClassSelect($('#cls'), S.classId);
+  }
+  document.querySelectorAll('#form [data-k]').forEach(el => { if (el.type !== 'color' && document.activeElement !== el) el.value = S[el.dataset.k] ?? ''; });
+}
+
+// El yazısı fontunda büyük harfli isimler okunmuyor: "AHMET YILMAZ" → "Ahmet Yılmaz"
+const titleCase = s => String(s || '').toLocaleLowerCase('tr').split(' ').map(w => w.charAt(0).toLocaleUpperCase('tr') + w.slice(1)).join(' ');
+
+function certHTML(p) {
+  const fill = t => esc(t).replace(/\{ad\}/g, esc(p.name || '')).replace(/\{sinif\}/g, esc(p.cls || '')).replace(/\{derece\}/g, esc(S.derece || ''));
+  const deco = S.design === 'klasik' ? ['top:44px;left:52px', 'top:44px;right:52px;transform:scaleX(-1)', 'bottom:44px;left:52px;transform:scaleY(-1)', 'bottom:44px;right:52px;transform:scale(-1)'].map(st => `<span class="orn" style="${st}">❦</span>`).join('')
+    : S.design === 'cocuk' ? Array.from({ length: 18 }, (_, i) => `<span class="star" style="left:${(i * 37) % 96 + 1}%;top:${i % 2 ? (i * 13) % 14 + 2 : 84 + (i * 7) % 12}%;transform:rotate(${i * 25}deg)">${['⭐', '🌟', '✨', '🎈', '🎉'][i % 5]}</span>`).join('') : '';
+  const sigs = [[S.s1n, S.s1t], [S.s2n, S.s2t]].filter(([n, t]) => n || t);
+  return `
+    <div class="paper land cert d-${S.design}" style="--acc:${S.accent}">${deco}
+      <div class="inner">
+        ${S.design === 'resmi' ? '<div class="okul">T.C.</div>' : ''}
+        ${S.okul ? `<div class="okul">${esc(S.okul)}</div>` : ''}
+        ${S.emoji ? `<div class="badge">${S.emoji}</div>` : ''}
+        <div class="title">${esc(S.title)}</div>
+        ${S.sub ? `<div class="sub">${esc(S.sub)}</div>` : ''}
+        <div class="name">${esc(S.design === 'klasik' ? titleCase(p.name) : p.name) || '<span style="color:#bbb">Ad Soyad</span>'}</div>
+        ${p.cls ? `<div class="cls">${esc(p.cls)}</div>` : ''}
+        <div class="text">${fill(S.text)}</div>
+        <div class="foot">
+          ${sigs[0] ? `<div class="sg"><div class="ln"></div><b>${esc(sigs[0][0])}</b><small>${esc(sigs[0][1])}</small></div>` : ''}
+          <div class="date">${OA.trDate(S.tarih)}</div>
+          ${sigs[1] ? `<div class="sg"><div class="ln"></div><b>${esc(sigs[1][0])}</b><small>${esc(sigs[1][1])}</small></div>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderPreview() {
+  const list = people();
+  S.page = Math.min(S.page, Math.max(0, list.length - 1));
+  $('#cnt').textContent = `${list.length} belge`;
+  OA.renderPaper($('#stage'), certHTML(list[S.page] || { name: '' }), { orient: 'landscape', margin: '0' });
+  $('#pager').innerHTML = list.length > 1 ? `<button class="btn sm" data-pg="-1">‹</button> ${S.page + 1} / ${list.length} · ${esc(list[S.page].name)} <button class="btn sm" data-pg="1">›</button>` : '';
+}
+function renderAll() { renderForm(); renderPreview(); }
+
+$('#form').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset;
+  if (d.type) { S.type = d.type; S.title = TYPES[d.type][2]; S.text = TYPES[d.type][3]; S.emoji = TYPES[d.type][0]; S.sub = d.type === 'ayin' ? 'Sevgili' : 'Sayın'; }
+  else if (d.design) S.design = d.design;
+  else if (d.acc) S.accent = d.acc;
+  else if (d.emoji != null) S.emoji = d.emoji;
+  else if (d.mode) S.mode = d.mode;
+  else if (b.id === 'allOn') S.off = {};
+  else if (b.id === 'allOff') S.off = Object.fromEntries((OA.classes.get(S.classId)?.students || []).map(s => [s.id, 1]));
+  else return;
+  save(); renderAll();
+});
+$('#form').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.k) { S[t.dataset.k] = t.value; if (t.dataset.k === 'accent') document.querySelectorAll('[data-acc]').forEach(b => b.classList.remove('on')); }
+  else if (t.dataset.sid) { t.checked ? delete S.off[t.dataset.sid] : (S.off[t.dataset.sid] = 1); }
+  else return;
+  save(); renderPreview();
+});
+$('#form').addEventListener('change', e => {
+  if (e.target.id !== 'cls' || e.target.value === '__manage') return;
+  S.classId = e.target.value; S.off = {}; S.page = 0; OA.classes.setActive(S.classId); save(); renderAll();
+});
+$('#pager').addEventListener('click', e => { const b = e.target.closest('[data-pg]'); if (b) { S.page = (S.page + +b.dataset.pg + people().length) % people().length; save(); renderPreview(); } });
+$('#btnPrint').onclick = () => {
+  const list = people().filter(p => p.name);
+  if (!list.length) return OA.toast('Önce belge verilecek kişiyi yazın');
+  OA.renderPaper(null, list.map(certHTML).join(''), { orient: 'landscape', margin: '0' });
+  // Önizleme ancak yazdırma bitince tek sayfaya döner; aksi halde bazı tarayıcılar yalnızca ilk belgeyi basar
+  window.addEventListener('afterprint', renderPreview, { once: true });
+  window.print();
+};
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resmî Yazı ve Dilekçe · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  .tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+  .tpl{font:inherit;text-align:left;border:2px solid var(--line);background:var(--surface);border-radius:16px;padding:12px;cursor:pointer;color:var(--text);display:flex;flex-direction:column;gap:4px;box-shadow:0 4px 0 var(--pop)}
+  .tpl span{font-size:24px}
+  .tpl b{font-weight:900;font-size:14px;line-height:1.2}
+  .tpl small{color:var(--muted);font-weight:700;font-size:12px}
+  .tpl.on{border-color:var(--brand);background:var(--brand-soft)}
+  .form .stack{gap:10px}
+
+  /* Belge */
+  .doc{line-height:1.6}
+  .doc .date{text-align:right}
+  .doc .to{text-align:center;font-weight:700;margin:46px 0 4px}
+  .doc .city{text-align:right;font-weight:700;margin-bottom:26px}
+  .doc .body p{text-indent:48px;text-align:justify;margin:0 0 10px;white-space:pre-line}
+  .doc .sig{margin:40px 0 0 auto;width:260px;text-align:center}
+  .doc .sig .ln{height:44px}
+  .doc .left{margin-top:50px;font-size:.95em}
+  .doc .left div{margin:2px 0}
+  .doc .ek{margin-top:22px;font-size:.95em}
+  .doc .hdr{text-align:center;font-weight:700;line-height:1.35;margin-bottom:26px}
+  .doc .meta{display:flex;justify-content:space-between;margin-bottom:4px}
+  .doc .ph{color:#b45309;background:#fff7ed;border-radius:3px;padding:0 3px}
+  @media print{.doc .ph{color:inherit;background:none}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="tpls" id="tpls"></div>
+  <div class="doc-layout">
+    <div class="panel form" id="form"></div>
+    <div class="doc-preview">
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Önizleme</span><span class="row"><button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button></span></h2>
+        <div class="paper-stage" id="stage"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '✉️', title: 'Resmî Yazı ve Dilekçe',
+  help: {
+    key: 'resmi-yazi', emoji: '✉️', title: 'Bu bir resmî yazı ve dilekçe hazırlama aracıdır',
+    intro: 'Okulda sık kullanılan dilekçe ve yazıları resmî biçimde hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🧩', title: 'Belge türünü seçin', text: 'Üstten izin dilekçesi, veli izin belgesi, görevlendirme yazısı gibi bir şablon seçin.' },
+      { icon: '✍️', title: 'Boşlukları doldurun', text: 'Soldaki alanları doldurun; önizlemede turuncu görünen yerler henüz doldurulmamış alanlardır.' },
+      { icon: '📚', title: 'Öğrenciyi listeden seçin', text: 'Öğrenciyle ilgili belgelerde "Sınıflarımdan öğrenci seç" ile ad, numara ve sınıf otomatik dolar.' },
+      { icon: '🖨️', title: 'Yazdırın', text: 'Metni istediğiniz gibi düzenleyip "Yazdır / PDF" ile çıktı alın.' }
+    ]
+  }
+});
+
+const KEY = 'oa.resmiYazi';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const today = () => new Date().toISOString().slice(0, 10);
+const COMMON = [['okul', 'Okul adı', 'text', 'ör. Atatürk Ortaokulu'], ['ilce', 'İlçe / il', 'text', 'ör. Çankaya / ANKARA'], ['tarih', 'Tarih', 'date']];
+const ph = (v, label) => v ? esc(v) : `<span class="ph">${esc(label)}</span>`;
+const d = v => OA.trDate(v);
+const cap = s => s ? s.charAt(0).toLocaleUpperCase('tr') + s.slice(1) : s;
+const dayCount = (a, b) => a && b ? Math.round((new Date(b) - new Date(a)) / 864e5) + 1 : '';
+
+const TEMPLATES = {
+  izin: {
+    ic: '🧑‍🏫', name: 'Öğretmen izin dilekçesi', desc: 'Mazeret / sağlık izni',
+    fields: [['ad', 'Ad Soyad', 'text'], ['brans', 'Branş', 'text', 'ör. Matematik'], ['tur', 'İzin türü', 'select', ['mazeret', 'sağlık', 'yıllık', 'refakat']],
+      ['bas', 'İzin başlangıcı', 'date'], ['bit', 'İzin bitişi', 'date'], ['neden', 'Gerekçe', 'text', 'ör. ailevi sebepler'], ['adres', 'Adres', 'textarea'], ['tel', 'Telefon', 'text']],
+    build: v => ({
+      kind: 'dilekce', to: `${v.okul || 'OKUL'} MÜDÜRLÜĞÜNE`,
+      body: [`Okulunuzda ${ph(v.brans, 'branş')} öğretmeni olarak görev yapmaktayım. ${ph(cap(v.neden), 'gerekçe')} nedeniyle ${ph(d(v.bas), 'başlangıç')} – ${ph(d(v.bit), 'bitiş')} tarihleri arasında ${dayCount(v.bas, v.bit) || ph('', 'gün')} gün ${esc(v.tur || 'mazeret')} izni kullanmak istiyorum.`, 'Gereğini bilgilerinize arz ederim.'],
+      sig: [v.ad, 'Ad Soyad / İmza'], left: [['Adres', v.adres], ['Telefon', v.tel]]
+    })
+  },
+  veli: {
+    ic: '👨‍👩‍👧', name: 'Veli mazeret dilekçesi', desc: 'Devamsızlık mazereti', student: true,
+    fields: [['veli', 'Veli adı soyadı', 'text'], ['ogr', 'Öğrenci adı soyadı', 'text'], ['sinif', 'Sınıfı', 'text'], ['no', 'Numarası', 'text'],
+      ['bas', 'Gelmediği ilk gün', 'date'], ['bit', 'Gelmediği son gün', 'date'], ['neden', 'Mazeret', 'text', 'ör. rahatsızlığı'], ['tel', 'Telefon', 'text'], ['ek', 'Ekler', 'text', 'ör. Doktor raporu']],
+    build: v => ({
+      kind: 'dilekce', to: `${v.okul || 'OKUL'} MÜDÜRLÜĞÜNE`,
+      body: [`Okulunuzun ${ph(v.sinif, 'sınıf')} sınıfında ${ph(v.no, 'no')} numarayla öğrenim gören ${ph(v.ogr, 'öğrenci adı')} adlı öğrencinin velisiyim. Öğrencim ${ph(v.neden, 'mazeret')} nedeniyle ${ph(d(v.bas), 'başlangıç')}${v.bit && v.bit !== v.bas ? ` – ${d(v.bit)}` : ''} tarih${v.bit && v.bit !== v.bas ? 'leri arasında' : 'inde'} okula gelememiştir.`, 'Devamsızlığının özürlü sayılması hususunda gereğini arz ederim.'],
+      sig: [v.veli, 'Veli Ad Soyad / İmza'], left: [['Telefon', v.tel]], ek: v.ek
+    })
+  },
+  gezi: {
+    ic: '🚌', name: 'Gezi veli izin belgesi', desc: 'Okul gezisine katılım izni', student: true,
+    fields: [['gezi', 'Gezi / etkinlik adı', 'text', 'ör. Anıtkabir gezisi'], ['yer', 'Gidilecek yer', 'text'], ['gtarih', 'Gezi tarihi', 'date'], ['saat', 'Saat aralığı', 'text', 'ör. 08.30 – 16.00'],
+      ['ogr', 'Öğrenci adı soyadı', 'text'], ['sinif', 'Sınıfı', 'text'], ['no', 'Numarası', 'text'], ['veli', 'Veli adı soyadı', 'text'], ['tel', 'Veli telefonu', 'text']],
+    build: v => ({
+      kind: 'dilekce', to: `${v.okul || 'OKUL'} MÜDÜRLÜĞÜNE`, title: 'VELİ İZİN BELGESİ',
+      body: [`Velisi bulunduğum, okulunuzun ${ph(v.sinif, 'sınıf')} sınıfında ${ph(v.no, 'no')} numarayla öğrenim gören ${ph(v.ogr, 'öğrenci adı')} adlı öğrencinin ${ph(d(v.gtarih), 'tarih')} tarihinde ${v.saat ? esc(v.saat) + ' saatleri arasında ' : ''}düzenlenecek olan ${ph(v.gezi, 'gezi adı')} (${ph(v.yer, 'yer')}) etkinliğine katılmasına izin veriyorum.`, 'Bilgilerinize arz ederim.'],
+      sig: [v.veli, 'Veli Ad Soyad / İmza'], left: [['Veli telefonu', v.tel]]
+    })
+  },
+  belge: {
+    ic: '🪪', name: 'Öğrenci belgesi talebi', desc: 'Öğrenci belgesi istemi', student: true,
+    fields: [['veli', 'Veli adı soyadı', 'text'], ['ogr', 'Öğrenci adı soyadı', 'text'], ['sinif', 'Sınıfı', 'text'], ['no', 'Numarası', 'text'], ['kurum', 'Verileceği yer', 'text', 'ör. ilgili makama'], ['tel', 'Telefon', 'text']],
+    build: v => ({
+      kind: 'dilekce', to: `${v.okul || 'OKUL'} MÜDÜRLÜĞÜNE`,
+      body: [`Okulunuzun ${ph(v.sinif, 'sınıf')} sınıfında ${ph(v.no, 'no')} numarayla öğrenim gören ${ph(v.ogr, 'öğrenci adı')} adlı öğrencinin velisiyim. ${ph(v.kurum, 'verileceği yer')} verilmek üzere öğrenci belgesi düzenlenmesi hususunda gereğini arz ederim.`],
+      sig: [v.veli, 'Veli Ad Soyad / İmza'], left: [['Telefon', v.tel]]
+    })
+  },
+  gorev: {
+    ic: '📌', name: 'Görevlendirme yazısı', desc: 'Kurum içi resmî yazı',
+    fields: [['sayi', 'Sayı', 'text', 'ör. 12345678-100-E.123'], ['konu', 'Konu', 'text', 'ör. Görevlendirme'], ['hitap', 'Kime', 'text', 'ör. Sayın Ayşe YILMAZ (Matematik Öğretmeni)'],
+      ['metin', 'Yazı metni', 'textarea'], ['mudur', 'Okul müdürü', 'text'], ['dagitim', 'Gereği / Bilgi', 'text', 'ör. Gereği: İlgili öğretmen']],
+    defaults: { konu: 'Görevlendirme', metin: '…/…/20.. tarihinde okulumuzda yapılacak ………… etkinliğinde görevlendirilmiş bulunmaktasınız.\nBilgilerinizi ve gereğini rica ederim.' },
+    build: v => ({
+      kind: 'resmi', to: v.hitap || '', body: String(v.metin || '').split(/\n+/).map(esc),
+      sig: [v.mudur, 'Okul Müdürü'], meta: { sayi: v.sayi, konu: v.konu }, dagitim: v.dagitim
+    })
+  },
+  genel: {
+    ic: '📝', name: 'Genel dilekçe', desc: 'Serbest konulu dilekçe',
+    fields: [['kime', 'Kime', 'text', 'ör. OKUL MÜDÜRLÜĞÜNE'], ['metin', 'Dilekçe metni', 'textarea'], ['ad', 'Ad Soyad', 'text'], ['adres', 'Adres', 'textarea'], ['tel', 'Telefon', 'text'], ['ek', 'Ekler', 'text']],
+    defaults: { metin: 'Dilekçe metninizi buraya yazın.\nGereğini bilgilerinize arz ederim.' },
+    build: v => ({
+      kind: 'dilekce', to: v.kime || `${v.okul || 'OKUL'} MÜDÜRLÜĞÜNE`, body: String(v.metin || '').split(/\n+/).map(esc),
+      sig: [v.ad, 'Ad Soyad / İmza'], left: [['Adres', v.adres], ['Telefon', v.tel]], ek: v.ek
+    })
+  }
+};
+
+let S = { tpl: 'izin', common: { tarih: today() }, v: {}, ...OA.store.get(KEY, {}) };
+const save = () => OA.store.set(KEY, S);
+const vals = () => ({ ...TEMPLATES[S.tpl].defaults, ...S.common, ...S.v[S.tpl] });
+
+function input([k, label, type, extra]) {
+  const v = vals()[k] ?? '';
+  if (type === 'textarea') return `<label class="field">${label}<textarea class="input" rows="${k === 'metin' ? 6 : 2}" data-k="${k}">${esc(v)}</textarea></label>`;
+  if (type === 'select') return `<label class="field">${label}<select class="input" data-k="${k}">${extra.map(o => `<option ${o === v ? 'selected' : ''}>${o}</option>`).join('')}</select></label>`;
+  return `<label class="field">${label}<input class="input" type="${type}" data-k="${k}" value="${esc(v)}" placeholder="${esc(extra || '')}"></label>`;
+}
+
+function renderForm() {
+  $('#tpls').innerHTML = Object.entries(TEMPLATES).map(([k, t]) => `<button class="tpl ${S.tpl === k ? 'on' : ''}" data-tpl="${k}"><span>${t.ic}</span><b>${t.name}</b><small>${t.desc}</small></button>`).join('');
+  const T = TEMPLATES[S.tpl];
+  const studs = OA.classes.list().filter(c => c.students.length);
+  $('#form').innerHTML = `
+    <h2><span><span class="h-ic">${T.ic}</span> ${T.name}</span></h2>
+    <div class="stack">
+      ${T.student && studs.length ? `<label class="field">📚 Sınıflarımdan öğrenci seç<select class="input" id="pickStu"><option value="">— Öğrenci seçin —</option>${studs.map(c => `<optgroup label="${esc(c.name)}">${c.students.map(s => `<option value="${c.id}|${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>` : ''}
+      ${T.fields.map(input).join('')}
+      <div class="psec"><div class="grid2">${COMMON.map(input).join('')}</div></div>
+      <button class="btn sm danger" id="btnReset" style="align-self:flex-start">Bu belgeyi temizle</button>
+    </div>`;
+}
+
+function renderDoc() {
+  const v = vals(), b = TEMPLATES[S.tpl].build(v);
+  let html;
+  if (b.kind === 'resmi') {
+    html = `
+      <div class="paper serif doc">
+        <div class="hdr">T.C.<br>${v.ilce ? esc(v.ilce.split('/')[0].trim()).toLocaleUpperCase('tr') + ' KAYMAKAMLIĞI<br>' : ''}${ph(v.okul, 'Okul adı')} Müdürlüğü</div>
+        <div class="meta"><span><b>Sayı :</b> ${ph(b.meta.sayi, 'sayı')}</span><span>${ph(d(v.tarih), 'tarih')}</span></div>
+        <div class="meta"><span><b>Konu :</b> ${ph(b.meta.konu, 'konu')}</span></div>
+        <div class="to" style="margin-top:36px">${ph(b.to, 'Kime')}</div>
+        <div class="body" style="margin-top:20px">${b.body.map(p => `<p>${p}</p>`).join('')}</div>
+        <div class="sig"><div class="ln"></div><b>${ph(b.sig[0], 'Ad Soyad')}</b><br>${b.sig[1]}</div>
+        ${b.dagitim ? `<div class="left"><b>Dağıtım:</b><div>${esc(b.dagitim)}</div></div>` : ''}
+      </div>`;
+  } else {
+    html = `
+      <div class="paper serif doc">
+        <div class="date">${ph(d(v.tarih), 'tarih')}</div>
+        ${b.title ? `<div class="to" style="margin-top:30px;text-decoration:underline">${b.title}</div>` : ''}
+        <div class="to">${esc(b.to).toLocaleUpperCase('tr')}</div>
+        <div class="city">${v.ilce ? esc(v.ilce).toLocaleUpperCase('tr') : ''}</div>
+        <div class="body">${b.body.map(p => `<p>${p}</p>`).join('')}</div>
+        <div class="sig"><div class="ln"></div><b>${ph(b.sig[0], 'Ad Soyad')}</b><br>${b.sig[1]}</div>
+        ${(b.left || []).some(([, x]) => x) ? `<div class="left">${b.left.filter(([, x]) => x).map(([k, x]) => `<div><b>${k}:</b> <span style="white-space:pre-line">${esc(x)}</span></div>`).join('')}</div>` : ''}
+        ${b.ek ? `<div class="ek"><b>Ek:</b> ${esc(b.ek)}</div>` : ''}
+      </div>`;
+  }
+  OA.renderPaper($('#stage'), html, { margin: '20mm 22mm' });
+}
+
+$('#tpls').addEventListener('click', e => { const b = e.target.closest('[data-tpl]'); if (b) { S.tpl = b.dataset.tpl; save(); renderForm(); renderDoc(); } });
+$('#form').addEventListener('input', e => {
+  const k = e.target.dataset.k; if (!k) return;
+  if (COMMON.some(c => c[0] === k)) S.common[k] = e.target.value;
+  else { S.v[S.tpl] = S.v[S.tpl] || {}; S.v[S.tpl][k] = e.target.value; }
+  save(); renderDoc();
+});
+$('#form').addEventListener('change', e => {
+  if (e.target.id !== 'pickStu' || !e.target.value) return;
+  const [cid, sid] = e.target.value.split('|'), c = OA.classes.get(cid), s = c.students.find(x => x.id === sid);
+  S.v[S.tpl] = { ...S.v[S.tpl], ogr: s.name, no: s.no, sinif: c.name };
+  save(); renderForm(); renderDoc();
+});
+$('#form').addEventListener('click', e => {
+  if (e.target.id !== 'btnReset') return;
+  if (!confirm('Bu belgedeki alanlar temizlensin mi?')) return;
+  delete S.v[S.tpl]; save(); renderForm(); renderDoc();
+});
+$('#btnPrint').onclick = () => { renderDoc(); window.print(); };
+renderForm(); renderDoc();
+</script>
+</body>
+</html>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toplantı Tutanağı · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<style>
+  @page{size:A4;margin:18mm 16mm}
+  .layout{display:grid;grid-template-columns:420px 1fr;gap:16px;align-items:start}
+  .layout > *{min-width:0}
+  .form-panel{display:flex;flex-direction:column;gap:16px}
+  .sec-title{font-size:14px;font-weight:900;margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .item{background:var(--surface-2);border:1.5px solid var(--line-2);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;position:relative}
+  .item + .item{margin-top:8px}
+  .item .x{position:absolute;top:4px;right:4px}
+  .item-head{display:flex;gap:6px;align-items:center;padding-right:28px}
+  .item-n{flex:none;width:26px;height:26px;border-radius:8px;background:var(--brand-soft);color:var(--brand-ink);font-weight:900;display:grid;place-items:center;font-size:13px}
+  .person{display:grid;grid-template-columns:1fr 1fr 110px 28px;gap:6px;align-items:center}
+  .person + .person{margin-top:6px}
+  .preview-wrap{position:sticky;top:76px}
+  .stage{background:var(--line-2);border-radius:16px;padding:18px;overflow:auto;max-height:calc(100vh - 160px)}
+
+  /* ---------- Resmî belge ---------- */
+  .doc{
+    background:#fff;color:#111;width:100%;max-width:794px;margin:0 auto;padding:56px 64px;min-height:1000px;
+    font-family:"Times New Roman",Times,serif;font-size:15px;line-height:1.5;box-shadow:0 20px 50px -20px rgba(0,0,0,.35)
+  }
+  .doc .d-head{text-align:center;font-weight:700;line-height:1.35;margin-bottom:18px}
+  .doc .d-head .tt{margin-top:10px;font-size:16px;text-decoration:underline}
+  .doc table.meta{width:100%;border-collapse:collapse;margin-bottom:18px}
+  .doc table.meta td{border:1px solid #444;padding:5px 8px;vertical-align:top}
+  .doc table.meta td:nth-child(odd){font-weight:700;width:22%;background:#f4f4f4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .doc h4{font-size:15px;margin:18px 0 6px;text-decoration:underline}
+  .doc ol{margin:0;padding-left:22px}
+  .doc .g-item{margin:0 0 10px}
+  .doc .g-item b{display:block}
+  .doc .g-item p{margin:2px 0 0;text-align:justify;white-space:pre-line}
+  .doc .placeholder{color:#999;font-style:italic}
+  .doc .signs{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 18px;margin-top:34px;text-align:center;break-inside:avoid}
+  .doc .sign{display:flex;flex-direction:column;align-items:center;font-size:14px}
+  .doc .sign .line{width:80%;border-bottom:1px dotted #444;height:42px;margin-bottom:4px}
+  .doc .sign b{font-weight:700}
+  .doc .sign i{font-style:normal;color:#444}
+
+  @media (max-width:1020px){.layout{grid-template-columns:1fr}.preview-wrap{position:static}.stage{max-height:none}}
+  @media (max-width:640px){.doc{padding:28px 22px}.person{grid-template-columns:1fr 1fr}}
+  @media print{
+    body > *:not(.page){display:none!important}
+    .page{padding:0!important;max-width:none!important}
+    .layout{display:block}
+    .form-panel,.preview-wrap h2{display:none!important}
+    .preview-wrap .panel{border:none;box-shadow:none;padding:0;background:none}
+    .stage{background:none;padding:0;max-height:none;overflow:visible}
+    .doc{box-shadow:none;padding:0;max-width:none;min-height:0}
+    .doc .placeholder{color:transparent}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="layout">
+    <div class="form-panel">
+      <div class="panel">
+        <h3 class="sec-title"><span><span class="h-ic">🏫</span> Genel bilgiler</span></h3>
+        <div class="stack">
+          <label class="field">Okul adı<input class="input" data-f="okul" placeholder="ör. Atatürk Ortaokulu Müdürlüğü"></label>
+          <div class="grid2">
+            <label class="field">Toplantı türü
+              <select class="input" data-f="tur">
+                <option>Öğretmenler Kurulu</option><option>Zümre Öğretmenler Kurulu</option><option>Şube Öğretmenler Kurulu</option><option>Veli Toplantısı</option><option>Diğer</option>
+              </select></label>
+            <label class="field" id="turDigerWrap">Toplantı adı<input class="input" data-f="turDiger" placeholder="ör. Okul Aile Birliği"></label>
+          </div>
+          <div class="grid2">
+            <label class="field">Eğitim-öğretim yılı<input class="input" data-f="yil"></label>
+            <label class="field">Toplantı no<input class="input" data-f="no" placeholder="ör. 3"></label>
+          </div>
+          <div class="grid3">
+            <label class="field">Tarih<input class="input" type="date" data-f="tarih"></label>
+            <label class="field">Saat<input class="input" type="time" data-f="saat"></label>
+            <label class="field">Yer<input class="input" data-f="yer" placeholder="ör. Öğretmenler Odası"></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3 class="sec-title"><span><span class="h-ic">👥</span> Katılımcılar</span><button class="btn sm" data-add="kisi">+ Kişi</button></h3>
+        <div id="kisiler"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="sec-title"><span><span class="h-ic">📋</span> Gündem ve görüşmeler</span>
+          <span class="row"><button class="btn sm" id="btnHazir" title="Toplantı türüne uygun hazır gündem maddeleri">✨ Hazır gündem</button><button class="btn sm" data-add="gundem">+ Madde</button></span></h3>
+        <div id="gundem"></div>
+      </div>
+
+      <div class="panel">
+        <h3 class="sec-title"><span><span class="h-ic">✅</span> Alınan kararlar</span><button class="btn sm" data-add="karar">+ Karar</button></h3>
+        <div id="kararlar"></div>
+      </div>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="panel">
+        <h2><span><span class="h-ic">📄</span> Tutanak önizlemesi</span>
+          <span class="row"><button class="btn sm danger" id="btnNew">Yeni tutanak</button><button class="btn primary" id="btnPrint">🖨️ Yazdır / PDF</button></span></h2>
+        <div class="stage"><div class="doc" id="doc"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '📝', title: 'Toplantı Tutanağı',
+  help: {
+    key: 'tutanak', emoji: '📝', title: 'Bu bir toplantı tutanağı hazırlama aracıdır',
+    intro: 'Kurul ve veli toplantıları için resmî biçimde, imza tablosu hazır bir tutanak oluşturur. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '🏫', title: 'Genel bilgileri girin', text: 'Okul adı, toplantı türü, tarih, saat ve yeri yazın. Eğitim-öğretim yılı kendiliğinden gelir.' },
+      { icon: '👥', title: 'Katılımcıları ekleyin', text: 'Ad soyad ve görevleriyle birlikte ekleyin; başkanı ve yazmanı (raportör) seçin. İmza tablosu bunlardan oluşur.' },
+      { icon: '📋', title: 'Gündemi yazın', text: '"Hazır gündem" ile toplantı türüne uygun maddeleri tek tıkla ekleyin, her maddenin altına görüşmeleri yazın.' },
+      { icon: '✅', title: 'Kararları ekleyin', text: 'Toplantıda alınan kararları madde madde girin.' },
+      { icon: '🖨️', title: 'Yazdırın', text: 'Sağdaki önizleme kâğıtta nasıl görüneceğini gösterir. "Yazdır / PDF" ile çıktı alın ya da PDF kaydedin.' }
+    ]
+  }
+});
+
+const KEY = 'oa.tutanak';
+const $ = s => document.querySelector(s);
+const esc = OA.esc;
+const eduYear = () => { const d = new Date(), y = d.getFullYear(); return d.getMonth() >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`; };
+const HAZIR = {
+  'Öğretmenler Kurulu': ['Açılış ve yoklama', 'Bir önceki toplantı kararlarının değerlendirilmesi', 'Mevzuat değişikliklerinin okunması', 'Eğitim-öğretim faaliyetlerinin değerlendirilmesi', 'Dilek ve temenniler', 'Kapanış'],
+  'Zümre Öğretmenler Kurulu': ['Açılış ve yoklama', 'Bir önceki zümre kararlarının değerlendirilmesi', 'Yıllık planların incelenmesi', 'Ortak sınavların planlanması', 'Dilek ve temenniler', 'Kapanış'],
+  'Şube Öğretmenler Kurulu': ['Açılış ve yoklama', 'Sınıfın genel başarı durumunun değerlendirilmesi', 'Öğrencilerin devam-devamsızlık durumları', 'Rehberliğe ihtiyaç duyan öğrencilerin belirlenmesi', 'Dilek ve temenniler', 'Kapanış'],
+  'Veli Toplantısı': ['Açılış ve tanışma', 'Okul ve sınıf kurallarının paylaşılması', 'Öğrenci başarı durumlarının değerlendirilmesi', 'Velilerin görüş ve önerileri', 'Kapanış'],
+  'Diğer': ['Açılış', 'Dilek ve temenniler', 'Kapanış']
+};
+const blank = () => ({
+  okul: '', tur: 'Öğretmenler Kurulu', turDiger: '', yil: eduYear(), no: '', tarih: new Date().toISOString().slice(0, 10), saat: '', yer: '',
+  kisiler: [{ ad: '', gorev: 'Okul Müdürü', rol: 'Başkan' }, { ad: '', gorev: 'Öğretmen', rol: 'Üye' }],
+  gundem: [{ baslik: '', metin: '' }],
+  kararlar: ['']
+});
+let S = OA.store.get(KEY, null) || blank();
+const save = () => OA.store.set(KEY, S);
+
+function trDate(v) {
+  if (!v) return '';
+  const d = new Date(v + 'T00:00');
+  return isNaN(d) ? v : d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function renderForm() {
+  document.querySelectorAll('[data-f]').forEach(el => { el.value = S[el.dataset.f] ?? ''; });
+  $('#turDigerWrap').style.visibility = S.tur === 'Diğer' ? 'visible' : 'hidden';
+  $('#kisiler').innerHTML = S.kisiler.map((k, i) => `
+    <div class="person">
+      <input class="input" placeholder="Ad Soyad" value="${esc(k.ad)}" data-l="kisiler" data-i="${i}" data-p="ad">
+      <input class="input" placeholder="Görevi" value="${esc(k.gorev)}" data-l="kisiler" data-i="${i}" data-p="gorev">
+      <select class="input" data-l="kisiler" data-i="${i}" data-p="rol">${['Başkan', 'Üye', 'Raportör'].map(r => `<option ${k.rol === r ? 'selected' : ''}>${r}</option>`).join('')}</select>
+      <button class="x" data-rm="kisiler" data-i="${i}" title="Sil">✕</button>
+    </div>`).join('');
+  $('#gundem').innerHTML = S.gundem.map((g, i) => `
+    <div class="item">
+      <div class="item-head"><span class="item-n">${i + 1}</span><input class="input" placeholder="Gündem maddesi" value="${esc(g.baslik)}" data-l="gundem" data-i="${i}" data-p="baslik"></div>
+      <textarea class="input" rows="3" placeholder="Bu maddede neler görüşüldü?" data-l="gundem" data-i="${i}" data-p="metin">${esc(g.metin)}</textarea>
+      <button class="x" data-rm="gundem" data-i="${i}" title="Sil">✕</button>
+    </div>`).join('');
+  $('#kararlar').innerHTML = S.kararlar.map((k, i) => `
+    <div class="item">
+      <div class="item-head"><span class="item-n">${i + 1}</span><textarea class="input" rows="2" placeholder="Alınan karar" data-l="kararlar" data-i="${i}">${esc(k)}</textarea></div>
+      <button class="x" data-rm="kararlar" data-i="${i}" title="Sil">✕</button>
+    </div>`).join('');
+}
+
+function renderDoc() {
+  const tur = S.tur === 'Diğer' ? (S.turDiger || 'Toplantı') : S.tur;
+  const ph = t => `<span class="placeholder">${t}</span>`;
+  const gundem = S.gundem.filter(g => g.baslik || g.metin);
+  const kararlar = S.kararlar.filter(k => k.trim());
+  const kisiler = S.kisiler.filter(k => k.ad || k.gorev);
+  const baskan = kisiler.find(k => k.rol === 'Başkan');
+  const ordered = [...kisiler.filter(k => k.rol !== 'Başkan'), ...(baskan ? [baskan] : [])];
+  $('#doc').innerHTML = `
+    <div class="d-head">
+      T.C.<br>${S.okul ? esc(S.okul).toLocaleUpperCase('tr') : ph('OKUL ADI')}<br>
+      ${esc(S.yil)} EĞİTİM-ÖĞRETİM YILI
+      <div class="tt">${esc(tur).toLocaleUpperCase('tr')} TOPLANTI TUTANAĞI</div>
+    </div>
+    <table class="meta">
+      <tr><td>Toplantı No</td><td>${esc(S.no) || ph('—')}</td><td>Tarih</td><td>${trDate(S.tarih) || ph('—')}</td></tr>
+      <tr><td>Toplantı Yeri</td><td>${esc(S.yer) || ph('—')}</td><td>Saat</td><td>${esc(S.saat) || ph('—')}</td></tr>
+      <tr><td>Başkan</td><td colspan="3">${baskan ? `${esc(baskan.ad)}${baskan.gorev ? ' (' + esc(baskan.gorev) + ')' : ''}` : ph('Katılımcılardan başkanı seçin')}</td></tr>
+      <tr><td>Katılımcılar</td><td colspan="3">${kisiler.length ? kisiler.map(k => esc(k.ad || '…')).join(', ') : ph('Katılımcı ekleyin')}</td></tr>
+    </table>
+
+    <h4>GÜNDEM MADDELERİ</h4>
+    ${gundem.length ? `<ol>${gundem.map(g => `<li>${esc(g.baslik) || ph('Gündem maddesi')}</li>`).join('')}</ol>` : ph('Gündem maddesi ekleyin')}
+
+    <h4>GÜNDEM MADDELERİNİN GÖRÜŞÜLMESİ</h4>
+    ${gundem.length ? gundem.map((g, i) => `
+      <div class="g-item"><b>${i + 1}. ${esc(g.baslik)}</b><p>${esc(g.metin) || ph('Görüşmeler yazılmadı.')}</p></div>`).join('') : ph('—')}
+
+    <h4>ALINAN KARARLAR</h4>
+    ${kararlar.length ? `<ol>${kararlar.map(k => `<li style="white-space:pre-line">${esc(k)}</li>`).join('')}</ol>` : ph('Karar ekleyin')}
+
+    <div class="signs">${ordered.map(k => `
+      <div class="sign"><div class="line"></div><b>${esc(k.ad) || '&nbsp;'}</b><i>${esc(k.gorev)}${k.rol !== 'Üye' ? ` · ${esc(k.rol)}` : ''}</i></div>`).join('')}
+    </div>`;
+}
+
+const form = document.querySelector('.form-panel');
+form.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.f) { S[t.dataset.f] = t.value; if (t.dataset.f === 'tur') $('#turDigerWrap').style.visibility = S.tur === 'Diğer' ? 'visible' : 'hidden'; }
+  else if (t.dataset.l) {
+    const list = S[t.dataset.l], i = +t.dataset.i;
+    if (t.dataset.p) list[i][t.dataset.p] = t.value; else list[i] = t.value;
+  } else return;
+  save(); renderDoc();
+});
+form.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.add === 'kisi') S.kisiler.push({ ad: '', gorev: 'Öğretmen', rol: 'Üye' });
+  else if (b.dataset.add === 'gundem') S.gundem.push({ baslik: '', metin: '' });
+  else if (b.dataset.add === 'karar') S.kararlar.push('');
+  else if (b.dataset.rm) S[b.dataset.rm].splice(+b.dataset.i, 1);
+  else if (b.id === 'btnHazir') {
+    const filled = S.gundem.some(g => g.baslik || g.metin);
+    if (filled && !confirm('Mevcut gündem maddeleri hazır maddelerle değiştirilsin mi?')) return;
+    S.gundem = HAZIR[S.tur].map(baslik => ({ baslik, metin: '' }));
+  } else return;
+  save(); renderForm(); renderDoc();
+});
+$('#btnPrint').onclick = () => window.print();
+$('#btnNew').onclick = () => {
+  if (!confirm('Mevcut tutanak silinip yeni, boş bir tutanak açılsın mı?')) return;
+  const keep = { okul: S.okul };
+  S = { ...blank(), ...keep }; save(); renderForm(); renderDoc();
+};
+
+renderForm(); renderDoc();
+</script>
+</body>
+</html>

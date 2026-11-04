@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Belirli Gün ve Haftalar · Okul Araçları</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#ea580c">
+<link rel="icon" href="../assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/common.js"></script>
+<script src="../assets/belirli-gunler.js"></script>
+<style>
+  .controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+  .controls .field{min-width:170px}
+  .upcoming{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+  .up{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;color:#fff;background:linear-gradient(135deg,var(--cc),color-mix(in srgb,var(--cc) 60%,#000));box-shadow:var(--shadow)}
+  .up .e{font-size:30px}
+  .up b{display:block;font-weight:900;line-height:1.2}
+  .up small{font-weight:800;opacity:.9}
+  .up .left{margin-left:auto;text-align:center;font-weight:900;background:rgba(255,255,255,.22);border-radius:12px;padding:4px 10px;white-space:nowrap}
+  .up .left span{display:block;font-size:22px;line-height:1}
+  .months{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+  .month h3{margin:0 0 10px;font-size:16px;font-weight:900;display:flex;justify-content:space-between;align-items:center}
+  .month.now{outline:3px solid var(--brand);outline-offset:2px}
+  .item{display:grid;grid-template-columns:36px 1fr auto;gap:4px 10px;align-items:center;padding:9px 10px;border-radius:14px;border:1.5px solid var(--line-2);border-left:5px solid var(--cc);background:var(--surface-2)}
+  .item + .item{margin-top:8px}
+  .item.past{opacity:.55}
+  .item.sel{background:color-mix(in srgb,var(--cc) 10%,var(--surface))}
+  .item .e{font-size:24px;text-align:center}
+  .item b{font-weight:900;line-height:1.25}
+  .item small{display:block;color:var(--muted);font-weight:700}
+  .item .acts{display:flex;gap:4px;align-items:center}
+  .item .more{grid-column:2/-1;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .item .more .input{padding:5px 8px;font-size:13px}
+  .item label.k{display:inline-flex;gap:5px;align-items:center;font-size:12.5px;font-weight:800;color:var(--muted);cursor:pointer}
+  .item label.k input{accent-color:var(--brand)}
+  .empty{color:var(--muted);font-weight:700;font-size:13px}
+  .note{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:12px}
+  /* Kâğıt */
+  .p-head{text-align:center;margin-bottom:12px}
+  .p-head .o{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#555;font-size:12px}
+  .p-head h1{margin:2px 0 4px;font-size:19px}
+  .p-tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+  .p-tbl th,.p-tbl td{border:1px solid #888;padding:4px 6px;text-align:left;vertical-align:top}
+  .p-tbl th{background:#f0f0f0;text-align:center}
+  .p-tbl td.c{text-align:center;white-space:nowrap}
+  .p-tbl tr.m td{background:#f7f7f7;font-weight:800;text-align:center}
+  .p-sign{display:flex;justify-content:flex-end;margin-top:30px;break-inside:avoid}
+  .p-sign div{text-align:center;min-width:220px;font-size:12.5px;font-weight:700}
+  .p-sign .ln{border-bottom:1px dotted #444;height:32px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="controls">
+    <label class="field">Eğitim-öğretim yılı<select class="input" id="year"></select></label>
+    <label class="field">Okulların açılış tarihi<input class="input" type="date" id="start"></label>
+    <label class="field" style="flex:1;min-width:200px">Ara<input class="input" id="q" placeholder="ör. öğretmen, orman, bayram"></label>
+    <div class="row">
+      <button class="btn" id="btnAdd">+ Okulumuzun etkinliği</button>
+      <button class="btn primary" id="btnPrint">🖨️ Görev çizelgesi</button>
+    </div>
+  </div>
+  <div class="row" style="margin-bottom:14px">
+    <div class="seg" id="cats"></div>
+    <div class="checks"><label><input type="checkbox" id="onlySel"> Yalnızca okulumuzda kutlanacaklar</label></div>
+  </div>
+  <div class="upcoming" id="upcoming"></div>
+  <div class="months" id="months"></div>
+  <p class="note">ℹ️ Tarihler MEB belirli gün ve haftalar listesine göre hesaplanır; her yıl yayımlanan listeyle karşılaştırın. Bir tarihi değiştirmek için ✏️ düğmesini kullanın. "Afiş" düğmesi Duyuru Afişi aracını o güne hazır açar.</p>
+</div>
+
+<script>
+OA.topbar({
+  emoji: '📅', title: 'Belirli Gün ve Haftalar',
+  help: {
+    key: 'belirli-gunler', emoji: '📅', title: 'Belirli gün ve haftalar takvimi',
+    intro: 'Eğitim-öğretim yılı boyunca kutlanacak ve anılacak gün ve haftaları gösterir, görevlendirme çizelgesi hazırlar. Şu şekilde kullanılır:',
+    steps: [
+      { icon: '📅', title: 'Yılı seçin', text: 'Eğitim-öğretim yılını ve okulların açılış tarihini seçin; tüm tarihler o yıla göre hesaplanır.' },
+      { icon: '✅', title: 'Kutlanacakları işaretleyin', text: 'Okulunuzda kutlanacak gün ve haftaların kutusunu işaretleyip sorumlu öğretmen ve not yazın.' },
+      { icon: '🖼️', title: 'Tek tıkla afiş', text: '"Afiş" düğmesi Duyuru Afişi aracını o güne uygun başlık, tarih ve simgeyle hazır açar.' },
+      { icon: '⭐', title: 'Kendi etkinliğinizi ekleyin', text: 'Okulunuza özel etkinlikleri (kermes, mezuniyet…) "+ Okulumuzun etkinliği" ile ekleyin.' },
+      { icon: '🖨️', title: 'Görev çizelgesini yazdırın', text: 'Sorumlu öğretmenlerle birlikte belirli gün ve haftalar görev çizelgesini yazdırın.' }
+    ]
+  }
+});
+
+const KEY = 'oa.belirliGunler';
+const $ = s => document.querySelector(s);
+const esc = OA.esc, G = OA.ozelGunler;
+const TODAY = G.iso(new Date());
+const eduY = (() => { const d = new Date(); return d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1; })();
+let S = { year: eduY, start: '', cat: '', q: '', onlySel: false, sel: {}, resp: {}, notes: {}, custom: [], edits: {}, okul: '', mudur: '', ...OA.store.get(KEY, {}) };
+const save = () => OA.store.set(KEY, S);
+const startOf = () => S.start || G.schoolStart(S.year);
+const items = () => G.compute(S.year, { start: startOf(), custom: S.custom, edits: S.edits });
+const daysLeft = d => Math.round((new Date(d + 'T00:00') - new Date(TODAY + 'T00:00')) / 864e5);
+// Ders programındaki öğretmenler sorumlu seçerken öneri olarak gelir
+const teacherNames = () => (OA.store.get('oa.dersDagitim', null)?.teachers || []).map(t => t.name).filter(Boolean);
+
+function render() {
+  $('#year').innerHTML = [-1, 0, 1].map(k => eduY + k).map(y => `<option value="${y}" ${y === S.year ? 'selected' : ''}>${y}-${y + 1}</option>`).join('');
+  $('#start').value = startOf();
+  if (document.activeElement !== $('#q')) $('#q').value = S.q;
+  $('#onlySel').checked = S.onlySel;
+  $('#cats').innerHTML = `<button data-cat="" class="${S.cat ? '' : 'on'}">Tümü</button>` + Object.entries(G.CATS).map(([k, [ic, n]]) => `<button data-cat="${k}" class="${S.cat === k ? 'on' : ''}">${ic} ${n}</button>`).join('');
+  const all = items();
+  const q = S.q.trim().toLocaleLowerCase('tr');
+  const list = all.filter(it => (!S.cat || it.cat === S.cat) && (!S.onlySel || S.sel[it.id]) && (!q || it.ad.toLocaleLowerCase('tr').includes(q)));
+  // Yaklaşanlar: bugünden sonraki ilk 4
+  const next = all.filter(it => it.end >= TODAY).slice(0, 4);
+  $('#upcoming').innerHTML = next.map(it => {
+    const n = daysLeft(it.start);
+    return `<div class="up" style="--cc:${G.CATS[it.cat][2]}"><span class="e">${it.ic}</span><div><b>${esc(it.ad)}</b><small>${G.dateText(it.start, it.end)}</small></div>
+      <div class="left">${n < 0 ? '<span>📣</span>sürüyor' : n === 0 ? '<span>🎉</span>bugün' : `<span>${n}</span>gün kaldı`}</div></div>`;
+  }).join('');
+  const months = [8, 9, 10, 11, 0, 1, 2, 3, 4, 5].map(m => ({ m, y: m >= 8 ? S.year : S.year + 1 }));
+  const names = teacherNames();
+  $('#months').innerHTML = `<datalist id="tlist">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>` + months.map(({ m, y }) => {
+    const inMonth = list.filter(it => { const d = new Date(it.start + 'T00:00'); return d.getMonth() === m && d.getFullYear() === y; });
+    const isNow = new Date().getMonth() === m && new Date().getFullYear() === y;
+    return `<div class="panel month ${isNow ? 'now' : ''}"><h3><span>${G.MONTHS[m]} ${y}</span><span class="chip">${inMonth.length}</span></h3>
+      ${inMonth.map(it => `
+        <div class="item ${it.end < TODAY ? 'past' : ''} ${S.sel[it.id] ? 'sel' : ''}" style="--cc:${G.CATS[it.cat][2]}" data-id="${it.id}">
+          <span class="e">${it.ic}</span>
+          <div><b>${esc(it.ad)}</b><small>${G.dateText(it.start, it.end)} · ${G.CATS[it.cat][1].replace(/lar$|ler$/, '')}${S.edits[it.id] ? ' · ✏️ değiştirildi' : ''}</small></div>
+          <div class="acts">
+            <label class="k" title="Okulumuzda kutlanacak"><input type="checkbox" data-sel ${S.sel[it.id] ? 'checked' : ''}> Kutlanacak</label>
+            <button class="btn sm" data-poster title="Bu gün için afiş hazırla">🖼️ Afiş</button>
+            <button class="x" data-edit title="Tarihi değiştir">✏️</button>
+            ${it.custom ? '<button class="x" data-del title="Sil">✕</button>' : ''}
+          </div>
+          ${S.sel[it.id] ? `<div class="more"><input class="input" list="tlist" data-resp value="${esc(S.resp[it.id] || '')}" placeholder="Sorumlu öğretmen(ler)"><input class="input" data-note value="${esc(S.notes[it.id] || '')}" placeholder="Not (ör. tören, pano, sunum)"></div>` : ''}
+        </div>`).join('') || '<div class="empty">Bu ay için kayıt yok.</div>'}
+    </div>`;
+  }).join('');
+}
+
+function dateDialog(title, it, onSave) {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">${it?.ic || '⭐'}</div><div><div class="eyebrow">${title}</div><h2>${esc(it?.ad || 'Okulumuzun etkinliği')}</h2></div></div>
+    <div class="stack">
+      ${it && !it.custom ? '' : `<label class="field">Etkinlik adı<input class="input" id="dAd" value="${esc(it?.ad || '')}" placeholder="ör. Okul Kermesi"></label>
+      <label class="field">Simge (emoji)<input class="input" id="dIc" value="${esc(it?.ic || '⭐')}" maxlength="4" style="width:80px;font-size:20px;text-align:center"></label>`}
+      <div class="grid2"><label class="field">Başlangıç<input class="input" type="date" id="dS" value="${it?.start || ''}"></label><label class="field">Bitiş (tek günse boş)<input class="input" type="date" id="dE" value="${it && it.end !== it.start ? it.end : ''}"></label></div>
+    </div>
+    <div class="modal-foot" style="margin-top:14px">${it && !it.custom && S.edits[it.id] ? '<button class="btn" data-reset>↺ Hesaplanan tarihe dön</button>' : '<span></span>'}<span class="row"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>Kaydet</button></span></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-reset]')?.addEventListener('click', () => { delete S.edits[it.id]; save(); wrap.remove(); render(); });
+  wrap.querySelector('[data-ok]').onclick = () => {
+    const s = wrap.querySelector('#dS').value, e = wrap.querySelector('#dE').value;
+    if (!s) return OA.toast('Başlangıç tarihi girin');
+    onSave({ start: s, end: e && e > s ? e : s, ad: wrap.querySelector('#dAd')?.value.trim(), ic: wrap.querySelector('#dIc')?.value.trim() });
+    wrap.remove(); save(); render();
+  };
+}
+
+// Afiş: Duyuru Afişi aracına hazır içerik bırakıp onu açar
+function openPoster(it) {
+  const y = new Date(it.start + 'T00:00').getFullYear();
+  OA.store.set('oa.duyuru.preset', {
+    tpl: it.tpl || (it.cat === 'anma' ? 'anma' : it.cat === 'bayram' ? 'cumhuriyet' : 'genel'),
+    kicker: G.dateText(it.start, it.end).toLocaleUpperCase('tr'),
+    title: it.id === 'cumhuriyet' ? `Cumhuriyetimizin ${y - 1923}. Yılı Kutlu Olsun!` : it.cat === 'bayram' ? `${it.ad} Kutlu Olsun!` : it.ad,
+    sub: it.d || '', text: S.notes[it.id] || '', date: it.start, date2: it.end !== it.start ? it.end : '', emoji: it.ic,
+    color: G.CATS[it.cat][2]
+  });
+  location.href = 'duyuru.html';
+}
+
+$('#months').addEventListener('click', e => {
+  const row = e.target.closest('.item'); if (!row) return;
+  const it = items().find(x => x.id === row.dataset.id), b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.poster != null) return openPoster(it);
+  if (b.dataset.edit != null) return dateDialog('Tarihi değiştir', it, v => {
+    if (it.custom) Object.assign(S.custom.find(c => c.id === it.id), { start: v.start, end: v.end, ad: v.ad || it.ad, ic: v.ic || it.ic });
+    else S.edits[it.id] = { start: v.start, end: v.end };
+  });
+  if (b.dataset.del != null) { if (!confirm(`"${it.ad}" silinsin mi?`)) return; S.custom = S.custom.filter(c => c.id !== it.id); delete S.sel[it.id]; save(); render(); }
+});
+$('#months').addEventListener('change', e => {
+  const row = e.target.closest('.item'); if (!row || e.target.dataset.sel == null) return;
+  e.target.checked ? (S.sel[row.dataset.id] = 1) : delete S.sel[row.dataset.id];
+  save(); render();
+});
+$('#months').addEventListener('input', e => {
+  const row = e.target.closest('.item'); if (!row) return;
+  if (e.target.dataset.resp != null) S.resp[row.dataset.id] = e.target.value;
+  else if (e.target.dataset.note != null) S.notes[row.dataset.id] = e.target.value;
+  else return;
+  save();
+});
+$('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { S.cat = b.dataset.cat; save(); render(); } });
+$('#q').addEventListener('input', e => { S.q = e.target.value; save(); render(); });
+$('#onlySel').onchange = e => { S.onlySel = e.target.checked; save(); render(); };
+$('#year').onchange = e => { S.year = +e.target.value; S.start = ''; save(); render(); };
+$('#start').onchange = e => { S.start = e.target.value; save(); render(); };
+$('#btnAdd').onclick = () => dateDialog('Yeni etkinlik', null, v => {
+  if (!v.ad) return OA.toast('Etkinlik adı yazın');
+  const id = 'c' + OA.uid(); S.custom.push({ id, ad: v.ad, ic: v.ic || '⭐', start: v.start, end: v.end }); S.sel[id] = 1;
+});
+
+$('#btnPrint').onclick = () => {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-back no-print';
+  wrap.innerHTML = `<div class="modal"><div class="modal-hero"><div class="modal-emoji">🖨️</div><div><div class="eyebrow">Yazdır</div><h2>Görev çizelgesi</h2></div></div>
+    <div class="stack">
+      <div class="checks"><label><input type="radio" name="pw" value="sel" checked> Yalnızca kutlanacaklar</label><label><input type="radio" name="pw" value="all"> Tüm liste</label></div>
+      <label class="field">Okul adı<input class="input" id="pOkul" value="${esc(S.okul)}"></label>
+      <label class="field">Okul müdürü<input class="input" id="pMudur" value="${esc(S.mudur)}"></label>
+    </div>
+    <div class="modal-foot" style="margin-top:14px"><button class="btn" data-no>Vazgeç</button><button class="btn primary" data-ok>🖨️ Yazdır</button></div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector('[data-no]').onclick = () => wrap.remove();
+  wrap.querySelector('[data-ok]').onclick = () => {
+    S.okul = wrap.querySelector('#pOkul').value; S.mudur = wrap.querySelector('#pMudur').value; save();
+    const onlySel = wrap.querySelector('input[name=pw]:checked').value === 'sel';
+    wrap.remove();
+    const list = items().filter(it => !onlySel || S.sel[it.id]);
+    if (!list.length) return OA.toast('Kutlanacak olarak işaretli gün yok');
+    let lastM = -1, rows = '';
+    for (const it of list) {
+      const m = new Date(it.start + 'T00:00').getMonth();
+      if (m !== lastM) { rows += `<tr class="m"><td colspan="4">${G.MONTHS[m].toLocaleUpperCase('tr')}</td></tr>`; lastM = m; }
+      rows += `<tr><td class="c">${G.dateText(it.start, it.end)}</td><td>${esc(it.ad)}</td><td>${esc(S.resp[it.id] || '')}</td><td>${esc(S.notes[it.id] || '')}</td></tr>`;
+    }
+    OA.renderPaper(null, `<div class="paper">
+      <div class="p-head">${S.okul ? `<div class="o">${esc(S.okul)}</div>` : ''}<h1>${S.year}-${S.year + 1} Eğitim-Öğretim Yılı Belirli Gün ve Haftalar Görev Çizelgesi</h1></div>
+      <table class="p-tbl"><thead><tr><th style="width:18%">Tarih</th><th style="width:38%">Belirli Gün / Hafta</th><th style="width:24%">Sorumlu Öğretmen(ler)</th><th>Açıklama</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="p-sign"><div>${new Date().toLocaleDateString('tr-TR')}<div class="ln"></div>${esc(S.mudur) || '&nbsp;'}<br><small>Okul Müdürü</small></div></div></div>`, { margin: '12mm' });
+    window.print();
+  };
+};
+
+render();
+</script>
+</body>
+</html>
