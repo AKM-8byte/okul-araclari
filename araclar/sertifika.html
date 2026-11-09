@@ -145,11 +145,13 @@ const DESIGNS = { klasik: ['📜', 'Klasik'], modern: ['🔷', 'Modern'], cocuk:
 const ACCENTS = ['#b8860b', '#1e3a8a', '#b91c1c', '#047857', '#7c3aed', '#ea580c', '#db2777', '#0f172a'];
 const EMOJIS = ['🏆', '🥇', '🥈', '🥉', '⭐', '🎖️', '🏅', '📚', '🎓', '🌟', '🙏', '🤝', '❤️', ''];
 let S = {
-  type: 'tesekkur', design: 'klasik', accent: '#b8860b', emoji: '🏆', mode: 'tek', okul: '', title: TYPES.tesekkur[2], sub: 'Sayın', text: TYPES.tesekkur[3],
+  type: 'tesekkur', design: 'klasik', accent: '#b8860b', emoji: '', mode: 'tek', okul: '', title: TYPES.tesekkur[2], sub: 'Sayın', text: TYPES.tesekkur[3],
   derece: 'Birincilik', tarih: new Date().toISOString().slice(0, 10), s1n: '', s1t: 'Sınıf Öğretmeni', s2n: '', s2t: 'Okul Müdürü',
   tekAd: '', tekSinif: '', classId: OA.classes.active()?.id || '', off: {}, manual: '', page: 0,
   ...OA.store.get(KEY, {})
 };
+// Rozet artık varsayılan olarak kapalı: eski kayıtlarda belge türünden gelen rozet bir kez kapatılır
+if (!S.rozetKapali) { if (Object.values(TYPES).some(t => t[0] === S.emoji)) S.emoji = ''; S.rozetKapali = true; }
 const save = () => OA.store.set(KEY, S);
 
 function people() {
@@ -221,7 +223,7 @@ function renderAll() { renderForm(); renderPreview(); }
 $('#form').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   const d = b.dataset;
-  if (d.type) { S.type = d.type; S.title = TYPES[d.type][2]; S.text = TYPES[d.type][3]; S.emoji = TYPES[d.type][0]; S.sub = d.type === 'ayin' ? 'Sevgili' : 'Sayın'; }
+  if (d.type) { S.type = d.type; S.title = TYPES[d.type][2]; S.text = TYPES[d.type][3]; if (S.emoji) S.emoji = TYPES[d.type][0]; S.sub = d.type === 'ayin' ? 'Sevgili' : 'Sayın'; }
   else if (d.design) S.design = d.design;
   else if (d.acc) S.accent = d.acc;
   else if (d.emoji != null) S.emoji = d.emoji;
